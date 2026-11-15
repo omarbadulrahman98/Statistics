@@ -279,7 +279,7 @@ function report(){
   reportText=L.join('\n')}
  const shareBox=`<div class="box rp"><h3>📤 ناردنی ڕاپۆرت</h3><div class="sh"><div class="r3"><button class="b-wa" data-sh="wa">وەتس ئەپ 📄</button><button class="b-tg" data-sh="tg">تێلیگرام</button><button class="b-vb" data-sh="vb">ڤایبەر</button></div></div></div>`;
  return `<div class="box rp"><div class="ttl"><b>📋 ڕاپۆرتی گشتی ڕۆشتوو</b><span>${lbl}</span></div></div>`+
-  cards([['کۆی کێشی (کگم) ڕۆشتوو',fmt(tot.barrels[1]+tot.bags[1])],['کۆی بەرمیل',fmt(tot.barrels[0])],['کۆی کیسە',fmt(tot.bags[0])]],false,0)+b+g+shareBox}
+  cards([['کۆی کێشی (کگم) ڕۆشتوو',fmt(tot.barrels[1]+tot.bags[1])],['کۆی بەرمیل',fmt(tot.barrels[0])],['کۆی کیسە',fmt(tot.bags[0])]],false,-1,true)+b+g+shareBox}
 
 function draw(keep){
  $('t1').classList.toggle('on',tab===1&&!repOn);$('t2').classList.toggle('on',tab===2&&!repOn);$('rbtn').classList.toggle('on',repOn);document.body.classList.toggle('repon',repOn);
