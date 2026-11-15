@@ -89,6 +89,8 @@ body.adding .bar,body.adding #view{display:none}
 #dlg .bt{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 #dlg button{padding:12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#0f172a;font:inherit;font-size:15px;font-weight:600}
 #dlg button#dlgY{background:#dc2626;border-color:#dc2626;color:#fff}
+#syncst{display:inline-block;font-size:12px;padding:3px 12px;border-radius:99px;background:var(--card);border:1px solid var(--bd);color:var(--mu);margin:0 0 8px;cursor:pointer}
+#syncst[data-c=k]{color:#047857;border-color:#047857}#syncst[data-c=e]{color:#dc2626;border-color:#dc2626}#syncst[data-c=o]{color:#b45309;border-color:#b45309}#syncst[data-c=s]{color:#2563eb;border-color:#2563eb}
 #toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#1e1b4b;color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;z-index:99;opacity:0;pointer-events:none;transition:opacity .25s;max-width:90%;text-align:center;box-shadow:0 4px 16px #0006}
 #toast.show{opacity:1}
 </style>
@@ -96,6 +98,7 @@ body.adding .bar,body.adding #view{display:none}
 <body>
 <h1>ئاماری ساحە بەرمیل، کیسە</h1>
 <div class="sub">ئاماری ڕۆشتوو و ئاماری ناو ساحە · وەشانی مۆبایل</div>
+<div id="syncst" data-c="n">...</div>
 <div class="tabs"><button id="t1" class="on">ئاماری ڕۆشتوو</button><button id="t2">ئاماری ناو ساحە</button></div>
 <button id="rbtn">📋 ڕاپۆرتی گشتی</button>
 
@@ -273,8 +276,16 @@ function draw(keep){
  $('view').innerHTML=repOn?report():tab===1?outgoing():yard();
  if(repOn)setTimeout(()=>{if(repOn)getPdf().catch(()=>{})},300);
  if(!keep)panel()}
-function save(){try{localStorage.setItem('sw_stats',JSON.stringify(D))}catch(e){}}
-function setData(o){D={manifests:o.manifests||[],pool:o.pool||[],manual:o.manual||D.manual||[],specs:o.specs||D.specs||{},avg:o.avg||D.avg||{}};save();draw()}
+function save(){try{localStorage.setItem('sw_stats',JSON.stringify(D))}catch(e){}try{window.SYNC&&window.SYNC.push()}catch(e){}}
+function setData(o){
+ const hasB=('manifests' in o)||('pool' in o),mm=new Map();
+ (D.manual||[]).forEach(e=>mm.set(e.id,e));
+ (o.manual||[]).forEach(e=>{e.id=e.id||(Date.now()+'-'+Math.random().toString(36).slice(2,6));mm.set(e.id,e)});
+ const sp=Object.assign({},D.specs||{});
+ Object.keys(o.specs||{}).forEach(k=>{sp[k]=Array.from(new Set([...(sp[k]||[]),...o.specs[k]]))});
+ D={manifests:hasB?(o.manifests||[]):(D.manifests||[]),pool:hasB?(o.pool||[]):(D.pool||[]),manual:Array.from(mm.values()),specs:sp,avg:Object.assign({},D.avg||{},o.avg||{})};
+ save();draw();
+ if(hasB&&window.SYNC)window.SYNC.bulk()}
 const goTab=n=>{repOn=false;tab=n;sel='';subSel='';addOpen=false;picks.clear();draw()};
 // ---- ناردنی ڕاپۆرت ----
 const copyTxt=async t=>{try{await navigator.clipboard.writeText(t);return true}catch(e){try{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();return ok}catch(e2){return false}}};
@@ -432,6 +443,130 @@ $('bkE').onclick=async()=>{const jb=new Blob([JSON.stringify(Object.assign({},D,
 $('bkI').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await f.text());if(!o||typeof o!=='object'||!('manual' in o||'manifests' in o))throw 0;if(Array.isArray(o.wa)){WA=o.wa;saveWA()}setData(o);toast('داتا هێنرایەوە ✓')}catch(x){toast('فایلەکە دروست نییە')}e.target.value=''};
 $('from').value=$('to').value=dayKey(new Date());
 draw();
+</script>
+<script type="module">
+const CFG={apiKey:"AIzaSyCkr_c6Sl0TqJZWrPjmA5talRVPusv33qQ",authDomain:"statistics-factory.firebaseapp.com",projectId:"statistics-factory",storageBucket:"statistics-factory.firebasestorage.app",messagingSenderId:"280596702805",appId:"1:280596702805:web:c9a5ab6c1c7b63a05816dc"};
+const B='https://www.gstatic.com/firebasejs/10.12.2/',KS=['barrels','bags'],$s=document.getElementById('syncst');
+let CODE='',fb=null,db=null,auth=null,running=false,errMsg='',unsubs=[],R,ready,pendF,bver=0,bulkTried=false;
+try{CODE=localStorage.getItem('sw_team')||'';bver=+localStorage.getItem('sw_bver')||0}catch(e){}
+const norm=s=>String(s||'').trim().toLowerCase().replace(/[^a-z0-9_-]/g,'');
+const sig=e=>[e.dir,e.kind,e.spec,e.qty,e.avg,e.tons,e.cars,e.sub||'',e.date].join('\u0001');
+function resetR(){R={manual:new Map(),specs:{barrels:new Set(),bags:new Set()},avg:new Map(),bulk:new Map()};ready={manual:0,specs:0,avg:0,bulk:0};pendF={}}
+resetR();
+const allReady=()=>ready.manual&&ready.specs&&ready.avg&&ready.bulk;
+function paint(){let t,c;
+ if(!CODE){t='هاوکاتکردن ناچالاکە — کرتە بکە بۆ دانانی کۆدی تیم';c='n'}
+ else if(!navigator.onLine){t='ئۆفلاین — دواتر هاوکات دەبێتەوە';c='o'}
+ else if(errMsg){t='هەڵە: '+errMsg;c='e'}
+ else if(!allReady()||Object.values(pendF).some(Boolean)){t='خەریکی هاوکاتکردنە...';c='s'}
+ else{t='✓ هاوکات کرا';c='k'}
+ $s.textContent=t;$s.dataset.c=c}
+function onErr(e){const c=(e&&e.code)||String(e);
+ errMsg=/api-key|invalid-api/.test(c)?'کلیلی API هەڵەیە':/permission/.test(c)?'ڕێگەپێدان نییە (Rules)':/operation-not-allowed|admin-restricted/.test(c)?'Anonymous چالاک نییە':/network|unavailable|offline/.test(c)?'':c;
+ console.error('sync',e);paint()}
+
+// ---- pure logic ----
+function mergeRemote(D,R,prev){
+ const out={manual:[],specs:Object.assign({},D.specs||{}),avg:{}},seen=new Set();
+ (D.manual||[]).forEach(e=>{const r=R.manual.get(e.id);if(r){out.manual.push(r);seen.add(e.id)}else if(!prev.manual.has(e.id)){out.manual.push(e);seen.add(e.id)}});
+ R.manual.forEach((r,id)=>{if(!seen.has(id))out.manual.push(r)});
+ KS.forEach(k=>{const loc=(D.specs&&D.specs[k])||[],a=[],s=new Set();
+  loc.forEach(x=>{if(R.specs[k].has(x)||!prev.specs[k].has(x)){a.push(x);s.add(x)}});
+  R.specs[k].forEach(x=>{if(!s.has(x))a.push(x)});out.specs[k]=a});
+ R.avg.forEach((v,k)=>{out.avg[k]=v});
+ Object.keys(D.avg||{}).forEach(k=>{if(!(k in out.avg)&&!prev.avg.has(k))out.avg[k]=D.avg[k]});
+ return out}
+function diff(D,R){
+ const ops=[],seen=new Set();
+ (D.manual||[]).forEach(e=>{seen.add(e.id);const r=R.manual.get(e.id);if(!r||sig(r)!==sig(e))ops.push({t:'m',e})});
+ R.manual.forEach((r,id)=>{if(!seen.has(id))ops.push({t:'md',id})});
+ KS.forEach(k=>{const loc=new Set((D.specs&&D.specs[k])||[]),rem=R.specs[k],
+  add=[...loc].filter(x=>!rem.has(x)),del=[...rem].filter(x=>!loc.has(x));
+  if(add.length)ops.push({t:'sa',k,v:add});if(del.length)ops.push({t:'sd',k,v:del})});
+ const upd={};let any=false;
+ Object.keys(D.avg||{}).forEach(k=>{const v=+D.avg[k];if(!isFinite(v))return;if(!R.avg.has(k)||R.avg.get(k)!==v){upd[k]=v;any=true}});
+ if(any)ops.push({t:'as',v:upd});
+ R.avg.forEach((v,k)=>{if(!(k in (D.avg||{})))ops.push({t:'ad',k})});
+ return ops}
+const stateSig=()=>[(D.manual||[]).map(sig).join('|'),JSON.stringify(D.specs),JSON.stringify(D.avg),(D.manifests||[]).length,(D.pool||[]).length].join('#');
+function loadPrev(){let p={};try{p=JSON.parse(localStorage.getItem('sw_sync')||'{}')}catch(e){}
+ const ok=p.code===CODE&&!!CODE,sp=(ok&&p.specs)||{};
+ return{exists:ok,manual:new Set(ok?p.manual:[]),specs:{barrels:new Set(sp.barrels||[]),bags:new Set(sp.bags||[])},avg:new Set(ok?p.avg:[])}}
+function savePrev(){try{localStorage.setItem('sw_sync',JSON.stringify({code:CODE,manual:[...R.manual.keys()],specs:{barrels:[...R.specs.barrels],bags:[...R.specs.bags]},avg:[...R.avg.keys()]}))}catch(e){}}
+
+// ---- writes ----
+function run(ops){const F=fb.F,ref=(...x)=>F.doc(db,'teams',CODE,...x),W=[];
+ ops.forEach(o=>{
+  if(o.t==='m')W.push(F.setDoc(ref('manual',String(o.e.id)),JSON.parse(JSON.stringify(o.e))));
+  else if(o.t==='md')W.push(F.deleteDoc(ref('manual',o.id)));
+  else if(o.t==='sa')W.push(F.setDoc(ref('meta','specs'),{[o.k]:F.arrayUnion(...o.v)},{merge:true}));
+  else if(o.t==='sd')W.push(F.setDoc(ref('meta','specs'),{[o.k]:F.arrayRemove(...o.v)},{merge:true}));
+  else if(o.t==='as')W.push(F.setDoc(ref('meta','avg'),{m:o.v},{merge:true}));
+  else if(o.t==='ad')W.push(F.updateDoc(ref('meta','avg'),new F.FieldPath('m',o.k),F.deleteField()))});
+ Promise.all(W).catch(onErr)}
+async function pushBulk(){
+ const F=fb.F,ver=Date.now(),pad=i=>String(i).padStart(3,'0');bver=ver;try{localStorage.setItem('sw_bver',String(ver))}catch(e){}
+ const chunks=arr=>{const res=[];let cur=[],len=0;(arr||[]).forEach(x=>{const l=JSON.stringify(x).length;if(cur.length&&len+l>250000){res.push(cur);cur=[];len=0}cur.push(x);len+=l});if(cur.length)res.push(cur);return res};
+ const mc=chunks(D.manifests),pc=chunks(D.pool),old=[...R.bulk.keys()],doc=id=>F.doc(db,'teams',CODE,'bulk',id);
+ try{
+  for(let i=0;i<mc.length;i++)await F.setDoc(doc('m-'+pad(i)),{ver,j:JSON.stringify(mc[i])});
+  for(let i=0;i<pc.length;i++)await F.setDoc(doc('p-'+pad(i)),{ver,j:JSON.stringify(pc[i])});
+  await F.setDoc(doc('meta'),{ver,m:mc.length,p:pc.length});
+  for(const id of old){if(id==='meta')continue;const d=R.bulk.get(id);if(d&&d.ver!==ver)await F.deleteDoc(doc(id))}
+ }catch(e){onErr(e)}}
+function applyBulk(){
+ const meta=R.bulk.get('meta');
+ if(!meta){if(((D.manifests||[]).length||(D.pool||[]).length)&&!bulkTried){bulkTried=true;pushBulk()}return false}
+ if(meta.ver===bver)return false;
+ const parts=(pre,n)=>{const a=[];for(let i=0;i<n;i++){const d=R.bulk.get(pre+'-'+String(i).padStart(3,'0'));if(!d||d.ver!==meta.ver)return null;a.push(...JSON.parse(d.j))}return a};
+ const m=parts('m',meta.m),p=parts('p',meta.p);if(!m||!p)return false;
+ D.manifests=m;D.pool=p;bver=meta.ver;try{localStorage.setItem('sw_bver',String(bver))}catch(e){}return true}
+
+// ---- reads ----
+function applyRemote(){
+ const prev=loadPrev(),before=stateSig(),out=mergeRemote(D,R,prev);
+ D.manual=out.manual;D.specs=out.specs;D.avg=out.avg;
+ let bchg=false;
+ if(localStorage.getItem('sw_bpend')==='1'){try{localStorage.removeItem('sw_bpend')}catch(e){}pushBulk()}else bchg=applyBulk();
+ savePrev();try{localStorage.setItem('sw_stats',JSON.stringify(D))}catch(e){}
+ const ops=diff(D,R);if(ops.length)run(ops);
+ if(stateSig()!==before||bchg){(addOpen||repOn)?draw(true):draw()}}
+function onRemote(){if(allReady())applyRemote();paint()}
+function attach(){
+ const F=fb.F,O={includeMetadataChanges:true},pv=loadPrev().exists;
+ const done=(n,ok,s)=>{pendF[n]=s.metadata.hasPendingWrites;if(ok){ready[n]=1;errMsg=''}onRemote()};
+ unsubs.push(F.onSnapshot(F.collection(db,'teams',CODE,'manual'),O,s=>{R.manual=new Map();s.forEach(d=>R.manual.set(d.id,Object.assign({},d.data(),{id:d.id})));done('manual',!s.empty||!s.metadata.fromCache||pv,s)},onErr));
+ unsubs.push(F.onSnapshot(F.doc(db,'teams',CODE,'meta','specs'),O,s=>{const x=s.exists()?s.data():{};R.specs={barrels:new Set(x.barrels||[]),bags:new Set(x.bags||[])};done('specs',s.exists()||!s.metadata.fromCache||pv,s)},onErr));
+ unsubs.push(F.onSnapshot(F.doc(db,'teams',CODE,'meta','avg'),O,s=>{R.avg=new Map(Object.entries((s.exists()&&s.data().m)||{}));done('avg',s.exists()||!s.metadata.fromCache||pv,s)},onErr));
+ unsubs.push(F.onSnapshot(F.collection(db,'teams',CODE,'bulk'),O,s=>{R.bulk=new Map();s.forEach(d=>R.bulk.set(d.id,d.data()));done('bulk',!s.empty||!s.metadata.fromCache||pv,s)},onErr))}
+function stopAll(){unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];resetR();running=false}
+async function start(){
+ stopAll();paint();if(!CODE)return;running=true;
+ try{
+  if(!fb){const [A,F,Au]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-firestore.js'),import(B+'firebase-auth.js')]);
+   fb={A,F,Au};const app=A.initializeApp(CFG);
+   try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()}),experimentalAutoDetectLongPolling:true})}catch(e){db=F.getFirestore(app)}
+   auth=Au.getAuth(app)}
+  await new Promise((res,rej)=>{let sg=false;fb.Au.onAuthStateChanged(auth,u=>{if(u)res();else if(!sg){sg=true;fb.Au.signInAnonymously(auth).catch(rej)}})});
+  errMsg='';attach();paint();
+ }catch(e){running=false;onErr(e)}}
+
+// ---- team code ----
+async function askCode(first){
+ const v=await inp(first?'کۆدی تیمەکەت بنووسە. لە هەموو مۆبایلەکان دەبێت هەمان کۆد بێت. تەنها پیت و ژمارەی ئینگلیزی، لانیکەم ٦ پیت':'کۆدی ئێستا: '+CODE+'\nکۆدی نوێی تیم بنووسە','omar-factory-7391',true);
+ if(v===null)return;const c=norm(v);
+ if(c.length<6){toast('کۆدەکە دەبێت لانیکەم ٦ پیت یان ژمارەی ئینگلیزی بێت');return}
+ if(c===CODE)return;
+ const go=()=>{CODE=c;try{localStorage.setItem('sw_team',c);localStorage.removeItem('sw_sync');localStorage.removeItem('sw_bver')}catch(e){}bver=0;bulkTried=false;errMsg='';start()};
+ if(CODE)ask('داتای ئەم مۆبایلە دەچێتە ناو تیمی نوێ. بەردەوام؟',go);else go()}
+$s.onclick=()=>askCode(!CODE);
+window.SYNC={
+ push(){if(db&&CODE&&allReady()){const ops=diff(D,R);if(ops.length)run(ops)}},
+ bulk(){if(!CODE)return;if(db&&allReady())pushBulk();else{try{localStorage.setItem('sw_bpend','1')}catch(e){}}}};
+addEventListener('online',()=>{errMsg='';if(CODE&&!running)start();paint()});
+addEventListener('offline',paint);
+paint();start();
+if(!CODE)setTimeout(()=>askCode(true),800);
 </script>
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))</script>
 </body>
