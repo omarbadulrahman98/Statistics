@@ -6,7 +6,7 @@
 <meta name="google" content="notranslate">
 <meta name="theme-color" content="#4c1d95">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="ئاماری ساحە">
@@ -568,6 +568,31 @@ addEventListener('offline',paint);
 paint();start();
 if(!CODE)setTimeout(()=>askCode(true),800);
 </script>
-<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))</script>
+<script>
+/* auto-update: new code from GitHub reaches the phone without reinstalling */
+if('serviceWorker' in navigator){
+ let hadSW=false,reloading=false,h0=null;
+ const hash=t=>{let h=5381;for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))|0;return h};
+ const grab=()=>fetch('index.html',{cache:'no-store'}).then(r=>r.ok?r.text():null).then(t=>t?hash(t):null).catch(()=>null);
+ const reload=()=>{if(reloading)return;reloading=true;location.reload()};
+ const busy=()=>{try{return !!addOpen}catch(e){return false}};
+ const check=async(reg)=>{
+  try{reg&&reg.update()}catch(e){}
+  const h=await grab();
+  if(h===null)return;
+  if(h0===null){h0=h;return}
+  if(h!==h0){ if(busy()){return} reload() }
+ };
+ navigator.serviceWorker.addEventListener('controllerchange',()=>{if(hadSW&&!busy())reload()});
+ addEventListener('load',()=>{
+  hadSW=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
+   grab().then(h=>{h0=h});
+   document.addEventListener('visibilitychange',()=>{if(!document.hidden)check(reg)});
+   setInterval(()=>check(reg),20*60*1000);
+  }).catch(()=>{});
+ });
+}
+</script>
 </body>
 </html>
