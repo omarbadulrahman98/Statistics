@@ -186,14 +186,24 @@ function outgoing(){
 
 // ---- ئاماری ناو ساحە: ماوە = داخڵبوو − ڕۆشتوو (هێنراو + دەستی) ----
 function yard(){
- const inW=win(),bag=c=>String(c.ItemType||'').trim()==='کیسە',tk=c=>String(c.ItemType||'').trim()==='تەنکەر';
+ const inW=()=>true,bag=c=>String(c.ItemType||'').trim()==='کیسە',tk=c=>String(c.ItemType||'').trim()==='تەنکەر';
  const T={barrels:[0,0],bags:[0,0]};
  D.pool.filter(c=>!String(c.TransferTo||'').trim()&&!tk(c)&&+c.Quantity>0&&+c.UnitKg>0&&inW(toD(c.SavedDate))).forEach(c=>{const a=T[bag(c)?'bags':'barrels'];a[0]+=c.Quantity*c.UnitKg;a[1]+=+c.Quantity});
  done().filter(x=>inW(toD(x.InvoiceDate))).forEach(x=>{const k=cls(x.Unit);if(k==='tanker')return;const a=T[k];a[0]-=+x.NetWeight||0;a[1]-=k==='barrels'?barrelQty(x):(+x.Quantity||0)});
  D.manual.filter(e=>inW(toD(e.date+'T00:00'))).forEach(e=>{const a=T[e.kind],s=e.dir==='yard'?1:-1;a[0]+=s*e.tons;a[1]+=s*e.qty});
  const avg=(n,q)=>q>0?(n/q).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'0';
- const ks=['barrels','bags'].filter(k=>!picks.size||picks.has(NAME[k]));
- return cards([[ks.length===1?`کۆی کێشی ${NAME[ks[0]]} (کگم)`:'کۆی کێشی (کگم) بەرمیل و کیسەی ناو ساحە',fmt(ks.reduce((s,k)=>s+T[k][0],0))],...ks.map(k=>[`کۆی ${NAME[k]}ی حازر`,fmt(T[k][1])])],true)+
+ const ks=['barrels','bags'],pk=picks.size?KIND[[...picks][0]]:'';
+ if(pk){
+  const G={};
+  D.manual.filter(e=>e.kind===pk).forEach(e=>{const g=G[e.spec+'|'+(e.sub||'')]??={s:e.spec,u:e.sub||'',q:0,t:0},m=e.dir==='yard'?1:-1;g.q+=m*e.qty;g.t+=m*e.tons});
+  const R=Object.values(G).sort((a,b)=>String(a.s).localeCompare(String(b.s))||String(a.u).localeCompare(String(b.u)));
+  const rq=T[pk][1]-R.reduce((s,g)=>s+g.q,0),rt=T[pk][0]-R.reduce((s,g)=>s+g.t,0);
+  if(rq||Math.abs(rt)>=1)R.push({s:'بێ مواسەفات',u:'',q:rq,t:rt});
+  const bg=pk==='bags',rows=R.map(g=>[esc(g.s),...(bg?[g.u?(SB[g.u]||esc(g.u)):'-']:[]),fmt(g.q),fmt(g.t)]);
+  rows.push(['<b>کۆ</b>',...(bg?['']:[]),`<b>${fmt(T[pk][1])}</b>`,`<b>${fmt(T[pk][0])}</b>`]);
+  return cards([[`کۆی کێشی ${NAME[pk]} (کگم)`,fmt(T[pk][0])],[`کۆی ${NAME[pk]}ی حازر`,fmt(T[pk][1])]],true)+
+   tbl(`${NAME[pk]} · ماوە لە ساحە بەپێی مواسەفات${bg?' و نەوع':''}`,['مواسەفات',...(bg?['نەوع']:[]),'عەدەد','کێش (کگم)'],rows)}
+ return cards([['کۆی کێشی (کگم) بەرمیل و کیسەی ناو ساحە',fmt(ks.reduce((s,k)=>s+T[k][0],0))],...ks.map(k=>[`کۆی ${NAME[k]}ی حازر`,fmt(T[k][1])])],true)+
   tbl('',['جۆری بار','کێش (کگم)','عەدەد','تێکڕا'],ks.map(k=>[(k==='barrels'?'🛢 ':BAGI+' ')+NAME[k],fmt(T[k][0]),fmt(T[k][1]),avg(T[k][0],T[k][1])]))}
 
 function panel(){
