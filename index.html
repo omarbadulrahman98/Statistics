@@ -32,6 +32,7 @@ h1{font-size:18px;margin:4px 0 2px}.sub{color:var(--mu);font-size:12px;margin-bo
 .chip.on{background:#fff;color:var(--ac);font-weight:700}
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px;text-align:center}
+.cards.c3{grid-template-columns:repeat(3,1fr);gap:6px}.c3 .card{padding:8px 4px}.c3 .card b{font-size:17px}.c3 .card span{font-size:11px;line-height:1.3;display:block}
 .card.wide{grid-column:1/-1}.card b{display:block;font-size:20px;margin-top:2px}.card span{font-size:12px;color:var(--mu)}
 .box{background:var(--card);border:1px solid var(--bd);border-radius:12px;margin:10px 0;overflow-x:auto}
 .box h2{font-size:13px;margin:0;padding:8px 10px;color:var(--mu)}
@@ -180,7 +181,7 @@ function outgoing(){
  rows.filter(x=>inW(toD(x.InvoiceDate))).forEach(x=>{const k=cls(x.Unit);add(toD(x.InvoiceDate),1,+x.NetWeight||0,k==='barrels'?barrelQty(x):0,k==='bags'?+x.Quantity||0:0)});
  mn.filter(e=>inW(toD(e.date+'T00:00'))).forEach(e=>add(toD(e.date+'T00:00'),e.cars,e.tons,e.kind==='barrels'?e.qty:0,e.kind==='bags'?e.qty:0));
  const body=Object.keys(by).sort().map(k=>[k,...by[k].map(fmt)]);
- return cards([['کۆی کێشی سافی (کگم)',fmt(g.barrels[1]+g.bags[1])],['کۆی بەرمیل',fmt(g.barrels[2])],['کۆی کیسە',fmt(g.bags[2])]],false,0)+
+ return cards([['کۆی کێشی سافی (کگم)',fmt(g.barrels[1]+g.bags[1])],['کۆی بەرمیل',fmt(g.barrels[2])],['کۆی کیسە',fmt(g.bags[2])]],false,-1,true)+
   tbl('',['جۆری بار','ئۆتۆمبیل','کێشی سافی (کگم)','عەدەد'],[['🛢 بەرمیل',...g.barrels.map(fmt)],[BAGI+' کیسە',...g.bags.map(fmt)]])+
   tbl('بەپێی بەروار',['بەروار','ئۆتۆمبیل','کێشی سافی (کگم)','بەرمیل','کیسە'],body)}
 
@@ -235,7 +236,7 @@ function addEntry(){
  D.manual.push({id:Date.now()+'-'+Math.random().toString(36).slice(2,6),dir:tab===1?'out':'yard',kind:k,spec:name,qty:q,avg:+$('sp_t').value||0,tons:q*(+$('sp_t').value||0),cars:0,sub:k==='bags'?subSel:'',date:$('sp_d').value||dayKey(new Date())});
  sel=name;save();draw();toast('پاشەکەوت کرا ✓')}
 
-const cards=(a,one,w=1)=>'<div class="cards">'+a.map((c,i)=>`<div class="card${(one||i===w)?' wide':''}"><span>${c[0]}</span><b>${c[1]}</b></div>`).join('')+'</div>';
+const cards=(a,one,w=1,c3)=>'<div class="cards'+(c3?' c3':'')+'">'+a.map((c,i)=>`<div class="card${(one||i===w)?' wide':''}"><span>${c[0]}</span><b>${c[1]}</b></div>`).join('')+'</div>';
 const tbl=(t,h,b)=>`<div class="box">${t?`<h2>${t}</h2>`:''}`+(b.length?`<table><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${b.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table>`:'<div class="empty">داتا نییە</div>')+'</div>';
 
 // ---- ڕاپۆرتی گشتی (ڕۆشتوو) ----
