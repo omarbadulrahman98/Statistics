@@ -193,7 +193,7 @@ function yard(){
  D.manual.filter(e=>inW(toD(e.date+'T00:00'))).forEach(e=>{const a=T[e.kind],s=e.dir==='yard'?1:-1;a[0]+=s*e.tons;a[1]+=s*e.qty});
  const avg=(n,q)=>q>0?(n/q).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'0';
  const ks=['barrels','bags'].filter(k=>!picks.size||picks.has(NAME[k]));
- return cards([['کۆی کێشی (کگم) بەرمیل و کیسەی ناو ساحە',fmt(ks.reduce((s,k)=>s+T[k][0],0))]],true)+
+ return cards([[ks.length===1?`کۆی کێشی ${NAME[ks[0]]} (کگم)`:'کۆی کێشی (کگم) بەرمیل و کیسەی ناو ساحە',fmt(ks.reduce((s,k)=>s+T[k][0],0))],...ks.map(k=>[`کۆی ${NAME[k]}ی حازر`,fmt(T[k][1])])],true)+
   tbl('',['جۆری بار','کێش (کگم)','عەدەد','تێکڕا'],ks.map(k=>[(k==='barrels'?'🛢 ':BAGI+' ')+NAME[k],fmt(T[k][0]),fmt(T[k][1]),avg(T[k][0],T[k][1])]))}
 
 function panel(){
