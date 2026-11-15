@@ -20,6 +20,7 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 "Segoe UI",Tahoma,Arial,sans-serif;padding:12px}
 h1{font-size:18px;margin:4px 0 2px}.sub{color:var(--mu);font-size:12px;margin-bottom:10px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 10px}.top h1{margin:0;flex:1}.top #syncst{margin:0;flex:0 1 auto;max-width:55%;text-align:center}
 .tabs{display:flex;gap:6px;margin:8px 0}
 .tabs button{flex:1;padding:10px 4px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font:inherit;font-weight:700}
 .tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
@@ -97,9 +98,8 @@ body.adding .bar,body.adding #view{display:none}
 </style>
 </head>
 <body>
-<h1>ئاماری ساحە بەرمیل، کیسە</h1>
-<div class="sub">ئاماری ڕۆشتوو و ئاماری ناو ساحە · وەشانی مۆبایل</div>
-<div id="syncst" data-c="n">...</div>
+<div class="top"><h1>ئاماری ساحە بەرمیل، کیسە</h1>
+<div id="syncst" data-c="n">...</div></div>
 <div class="tabs"><button id="t1" class="on">ئاماری ڕۆشتوو</button><button id="t2">ئاماری ناو ساحە</button></div>
 <button id="rbtn">📋 ڕاپۆرتی گشتی</button>
 
@@ -194,6 +194,7 @@ function yard(){
  D.manual.filter(e=>inW(toD(e.date+'T00:00'))).forEach(e=>{const a=T[e.kind],s=e.dir==='yard'?1:-1;a[0]+=s*e.tons;a[1]+=s*e.qty});
  const avg=(n,q)=>q>0?(n/q).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'0';
  const ks=['barrels','bags'],pk=picks.size?KIND[[...picks][0]]:'';
+ const CARDS3=cards([['کۆی کێش (کگم)',fmt(T.barrels[0]+T.bags[0])],['کۆی بەرمیل',fmt(T.barrels[1])],['کۆی کیسە',fmt(T.bags[1])]],false,-1,true);
  if(pk){
   const G={};
   D.manual.filter(e=>e.kind===pk).forEach(e=>{const g=G[e.spec+'|'+(e.sub||'')]??={s:e.spec,u:e.sub||'',q:0,t:0},m=e.dir==='yard'?1:-1;g.q+=m*e.qty;g.t+=m*e.tons});
@@ -202,9 +203,9 @@ function yard(){
   if(rq||Math.abs(rt)>=1)R.push({s:'بێ مواسەفات',u:'',q:rq,t:rt});
   const bg=pk==='bags',rows=R.map(g=>[esc(g.s),...(bg?[g.u?(SB[g.u]||esc(g.u)):'-']:[]),fmt(g.q),fmt(g.t)]);
   rows.push(['<b>کۆ</b>',...(bg?['']:[]),`<b>${fmt(T[pk][1])}</b>`,`<b>${fmt(T[pk][0])}</b>`]);
-  return cards([[`کۆی کێشی ${NAME[pk]} (کگم)`,fmt(T[pk][0])],[`کۆی ${NAME[pk]}ی حازر`,fmt(T[pk][1])]],true)+
+  return CARDS3+
    tbl(`${NAME[pk]} · ماوە لە ساحە بەپێی مواسەفات${bg?' و نەوع':''}`,['مواسەفات',...(bg?['نەوع']:[]),'عەدەد','کێش (کگم)'],rows)}
- return cards([['کۆی کێشی (کگم) بەرمیل و کیسەی ناو ساحە',fmt(ks.reduce((s,k)=>s+T[k][0],0))],...ks.map(k=>[`کۆی ${NAME[k]}ی حازر`,fmt(T[k][1])])],true)+
+ return CARDS3+
   tbl('',['جۆری بار','کێش (کگم)','عەدەد','تێکڕا'],ks.map(k=>[(k==='barrels'?'🛢 ':BAGI+' ')+NAME[k],fmt(T[k][0]),fmt(T[k][1]),avg(T[k][0],T[k][1])]))}
 
 function panel(){
