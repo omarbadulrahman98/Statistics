@@ -198,7 +198,7 @@ function yard(){
 
 function panel(){
  const p=[...picks][0],el=$('panel');el.hidden=!p;if(!p)addOpen=false;document.body.classList.toggle('adding',addOpen);$('addBtn').textContent=addOpen?'داخستنی فۆڕم':(tab===1?'داخڵکردنی ڕۆشتووەکان':'زیادکردنی عەدەد');if(!p){el.innerHTML='';return}
- const k=KIND[p],y=tab===2,sp=D.specs[k]||[],en=D.manual.filter(e=>e.kind===k);
+ const k=KIND[p],y=tab===2,sp=D.specs[k]||[],inW=win(),en=D.manual.filter(e=>e.kind===k&&inW(toD(e.date+'T00:00')));
  const sm=(s,d,f)=>en.filter(e=>e.spec===s&&e.dir===d).reduce((a,e)=>a+e[f],0);
  const av=D.avg[k+'|'+sel]??D.avg[k]??'',sb=k==='bags'?'<div class="sp" style="margin:0 0 8px">'+Object.keys(SB).map(x=>`<button data-sub="${x}" class="${x===subSel?'on':''}">${SB[x]}</button>`).join('')+'</div>':'';
  let h=`<h2>مواسەفاتی قیر · ${p}</h2>`+(!addOpen?'':`${sb}<label>مواسەفات (نموونە 60/70)</label><input id="sp_n" value="${esc(sel)}" autocomplete="off">${sp.length?'<div class="sp" id="fsp" style="margin:8px 0 0">'+sp.map((x,n)=>`<button type="button" data-fs="${n}" class="${x===sel?'on':''}">${esc(x)}</button>`).join('')+'</div>':''}`+
@@ -424,7 +424,7 @@ $('view').onclick=async e=>{const q=e.target.closest('button[data-wn],button[dat
 
 $('rbtn').onclick=()=>{repOn=!repOn;if(repOn){addOpen=false;picks.clear();sel='';subSel=''}draw()};
 $('t1').onclick=()=>goTab(1);$('t2').onclick=()=>goTab(2);
-['per','from','to'].forEach(i=>$(i).onchange=()=>draw(true));
+['per','from','to'].forEach(i=>$(i).onchange=()=>{draw(true);if(!addOpen)panel()});
 $('chips').onclick=e=>{const o=e.target.dataset.o;if(!o)return;const had=picks.has(o);picks.clear();if(!had)picks.add(o);sel='';subSel='';draw()};
 $('panel').onclick=e=>{const t=e.target.closest('button');if(!t)return;const k=KIND[[...picks][0]];
  if(t.id==='sp_add')return addEntry();
