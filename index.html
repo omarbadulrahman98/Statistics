@@ -164,7 +164,8 @@ const KIND={'بەرمیل':'barrels','کیسە':'bags'};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const nz=s=>s.replace(/[٠-٩]/g,c=>c.charCodeAt(0)-1632).replace(/[۰-۹]/g,c=>c.charCodeAt(0)-1776).replace(/\s+/g,' ').trim();
 let sel='',addOpen=false,subSel='';
-const SB={cage:'جامبۆ قەفەز',nocage:'جامبۆ بێ قەفەز'};
+const SB={cage:'جامبۆ قەفەز',nocage:'جامبۆ بێ قەفەز'},SBR={'05':'05','06':'06'};
+const SUBS=k=>k==='bags'?SB:SBR,subLbl=(k,u)=>u?(SUBS(k)[u]||esc(u)):'',SORD={bags:['cage','nocage',''],barrels:['05','06','']};
 function ask(m,cb){const d=$('dlg');$('dlgT').textContent=m;d.classList.add('show');
  const close=()=>d.classList.remove('show');
  $('dlgY').onclick=()=>{close();cb()};$('dlgN').onclick=close;d.onclick=e=>{if(e.target===d)close()}}
@@ -201,10 +202,10 @@ function yard(){
   const R=Object.values(G).sort((a,b)=>String(a.s).localeCompare(String(b.s))||String(a.u).localeCompare(String(b.u)));
   const rq=T[pk][1]-R.reduce((s,g)=>s+g.q,0),rt=T[pk][0]-R.reduce((s,g)=>s+g.t,0);
   if(rq||Math.abs(rt)>=1)R.push({s:'بێ مواسەفات',u:'',q:rq,t:rt});
-  const bg=pk==='bags',rows=R.map(g=>[esc(g.s),...(bg?[g.u?(SB[g.u]||esc(g.u)):'-']:[]),fmt(g.q),fmt(g.t)]);
-  rows.push(['<b>کۆ</b>',...(bg?['']:[]),`<b>${fmt(T[pk][1])}</b>`,`<b>${fmt(T[pk][0])}</b>`]);
+  const rows=R.map(g=>[esc(g.s),subLbl(pk,g.u)||'-',fmt(g.q),fmt(g.t)]);
+  rows.push(['<b>کۆ</b>','',`<b>${fmt(T[pk][1])}</b>`,`<b>${fmt(T[pk][0])}</b>`]);
   return CARDS3+
-   tbl(`${NAME[pk]} · ماوە لە ساحە بەپێی مواسەفات${bg?' و نەوع':''}`,['مواسەفات',...(bg?['نەوع']:[]),'عەدەد','کێش (کگم)'],rows)}
+   tbl(`${NAME[pk]} · ماوە لە ساحە بەپێی مواسەفات و نەوع`,['مواسەفات','نەوع','عەدەد','کێش (کگم)'],rows)}
  return CARDS3+
   tbl('',['جۆری بار','کێش (کگم)','عەدەد','تێکڕا'],ks.map(k=>[(k==='barrels'?'🛢 ':BAGI+' ')+NAME[k],fmt(T[k][0]),fmt(T[k][1]),avg(T[k][0],T[k][1])]))}
 
@@ -212,7 +213,7 @@ function panel(){
  const p=[...picks][0],el=$('panel');el.hidden=!p;if(!p)addOpen=false;document.body.classList.toggle('adding',addOpen);$('addBtn').textContent=addOpen?'داخستنی فۆڕم':(tab===1?'داخڵکردنی ڕۆشتووەکان':'زیادکردنی عەدەد');if(!p){el.innerHTML='';return}
  const k=KIND[p],y=tab===2,sp=D.specs[k]||[],inW=win(),en=D.manual.filter(e=>e.kind===k&&inW(toD(e.date+'T00:00')));
  const sm=(s,d,f)=>en.filter(e=>e.spec===s&&e.dir===d).reduce((a,e)=>a+e[f],0);
- const av=D.avg[k+'|'+sel]??D.avg[k]??'',sb=k==='bags'?'<div class="sp" style="margin:0 0 8px">'+Object.keys(SB).map(x=>`<button data-sub="${x}" class="${x===subSel?'on':''}">${SB[x]}</button>`).join('')+'</div>':'';
+ const av=D.avg[k+'|'+sel]??D.avg[k]??'',sb='<div class="sp" style="margin:0 0 8px">'+Object.keys(SUBS(k)).map(x=>`<button data-sub="${x}" class="${x===subSel?'on':''}">${SUBS(k)[x]}</button>`).join('')+'</div>';
  let h=`<h2>مواسەفاتی قیر · ${p}</h2>`+(!addOpen?'':`${sb}<label>مواسەفات (نموونە 60/70)</label><input id="sp_n" value="${esc(sel)}" autocomplete="off">${sp.length?'<div class="sp" id="fsp" style="margin:8px 0 0">'+sp.map((x,n)=>`<button type="button" data-fs="${n}" class="${x===sel?'on':''}">${esc(x)}</button>`).join('')+'</div>':''}`+
  `<div class="row2"><div><label>عەدەد</label><input id="sp_q" type="number" inputmode="numeric" min="0"></div><div><label>تێکڕا · کێشی یەک ${p}</label><input id="sp_t" value="${av}" type="number" inputmode="decimal" step="any" min="0"></div></div>`+
  `<div style="margin-top:8px"><label>بەروار</label><input id="sp_d" type="date" value="${dayKey(new Date())}"></div>`+
@@ -222,7 +223,7 @@ function panel(){
  if(sel){const i=sm(sel,'yard','qty'),o=sm(sel,'out','qty');
   h+=cards([[`ژمارەی ${p}ی ${esc(sel)} ${y?'(ماوە لە ساحە)':'(ڕۆشتوو)'}`,fmt(y?i-o:o)]],true);
   const G={};en.filter(e=>e.spec===sel&&e.dir===(y?'yard':'out')).forEach(e=>{const g=G[e.date+'|'+(e.sub||'')]??={q:0,t:0};g.q+=e.qty;g.t+=e.tons});
-  h+=tbl(y?'تۆمارەکانی داخڵبوو':'تۆمارەکانی ڕۆشتوو',['بەروار','عەدەد','تێکڕا','کۆی وەزن',''],Object.keys(G).sort().reverse().map(d=>[d.split('|')[0]+(k==='bags'?' · '+(SB[d.split('|')[1]]||'-'):''),fmt(G[d].q),(G[d].q?G[d].t/G[d].q:0).toLocaleString('en-US',{maximumFractionDigits:2}),fmt(G[d].t),`<button class="x" data-x="${d}" aria-label="سڕینەوە">${TRASH}</button>`]));
+  h+=tbl(y?'تۆمارەکانی داخڵبوو':'تۆمارەکانی ڕۆشتوو',['بەروار','عەدەد','تێکڕا','کۆی وەزن',''],Object.keys(G).sort().reverse().map(d=>[d.split('|')[0]+' · '+(subLbl(k,d.split('|')[1])||'-'),fmt(G[d].q),(G[d].q?G[d].t/G[d].q:0).toLocaleString('en-US',{maximumFractionDigits:2}),fmt(G[d].t),`<button class="x" data-x="${d}" aria-label="سڕینەوە">${TRASH}</button>`]));
   h+='<button class="go" id="sp_del" style="background:#dc2626">سڕینەوەی ئەم مواسەفاتە</button>'}
  else if(sp.length)h+=y?tbl('هەموو مواسەفاتەکان',['مواسەفات','داخڵبوو','ڕۆشتوو','ماوە'],sp.map(s=>[esc(s),fmt(sm(s,'yard','qty')),fmt(sm(s,'out','qty')),fmt(sm(s,'yard','qty')-sm(s,'out','qty'))])):tbl('هەموو مواسەفاتەکان',['مواسەفات','عەدەد','کێش (کگم)'],sp.map(s=>[esc(s),fmt(sm(s,'out','qty')),fmt(sm(s,'out','tons'))]));
  el.innerHTML=h}
@@ -234,7 +235,7 @@ function addEntry(){
  if(!(q>0)){toast('عەدەد بنووسە');return}
  const L=D.specs[k]=D.specs[k]||[],name=L.find(x=>x.toLowerCase()===s.toLowerCase())||(L.push(s),s);
  if(+$('sp_t').value>0)D.avg[k+'|'+name]=D.avg[k]=+$('sp_t').value;
- D.manual.push({id:Date.now()+'-'+Math.random().toString(36).slice(2,6),dir:tab===1?'out':'yard',kind:k,spec:name,qty:q,avg:+$('sp_t').value||0,tons:q*(+$('sp_t').value||0),cars:0,sub:k==='bags'?subSel:'',date:$('sp_d').value||dayKey(new Date())});
+ D.manual.push({id:Date.now()+'-'+Math.random().toString(36).slice(2,6),dir:tab===1?'out':'yard',kind:k,spec:name,qty:q,avg:+$('sp_t').value||0,tons:q*(+$('sp_t').value||0),cars:0,sub:subSel,date:$('sp_d').value||dayKey(new Date())});
  sel=name;save();draw();toast('پاشەکەوت کرا ✓')}
 
 const cards=(a,one,w=1,c3)=>'<div class="cards'+(c3?' c3':'')+'">'+a.map((c,i)=>`<div class="card${(one||i===w)?' wide':''}"><span>${c[0]}</span><b>${c[1]}</b></div>`).join('')+'</div>';
@@ -248,7 +249,7 @@ function report(){
  const mf=done().filter(x=>cls(x.Unit)!=='tanker'&&inW(toD(x.InvoiceDate)));
  const G={barrels:{},bags:{}};
  const put=(k,sub,spec,q,kg)=>{const key=sub+'|'+spec,r=G[k][key]??={sub,spec,q:0,kg:0};r.q+=q;r.kg+=kg};
- mn.forEach(e=>put(e.kind,e.kind==='bags'?(e.sub||''):'',e.spec,+e.qty||0,+e.tons||0));
+ mn.forEach(e=>put(e.kind,e.sub||'',e.spec,+e.qty||0,+e.tons||0));
  mf.forEach(x=>{const k=cls(x.Unit);put(k,'','',k==='barrels'?barrelQty(x):(+x.Quantity||0),+x.NetWeight||0)});
  const spn=r=>r.spec?`<span class="spc">${esc(r.spec)}</span>`:'<span style="color:var(--mu)">نەدیاریکراو</span>';
  const sortR=(a,b)=>String(a.spec).localeCompare(String(b.spec),undefined,{numeric:true});
@@ -256,23 +257,21 @@ function report(){
  const sec=(k,title)=>{
   const rows=Object.values(G[k]);rows.forEach(r=>{tot[k][0]+=r.q;tot[k][1]+=r.kg});
   if(!rows.length)return `<div class="box rp"><h3>${title}</h3><div class="none">هیچ داتایەک نییە</div></div>`;
-  let h=k==='barrels'?'<tr><th>مواسەفات</th><th>عەدەد</th><th>کێش (کگم)</th></tr>':'<tr><th>مواسەفات</th><th>نەوع</th><th>عەدەد</th><th>کێش (کگم)</th></tr>';
-  if(k==='barrels'){rows.sort(sortR).forEach(r=>h+=`<tr><td>${spn(r)}</td><td class="n">${fmt(r.q)}</td><td class="n">${fmt(r.kg)}</td></tr>`)}
-  else{
-   const ord={cage:0,nocage:1,'':2};
-   rows.sort((a,b)=>sortR(a,b)||ord[a.sub]-ord[b.sub]).forEach(r=>h+=`<tr><td>${spn(r)}</td><td>${r.sub?SB[r.sub]:'-'}</td><td class="n">${fmt(r.q)}</td><td class="n">${fmt(r.kg)}</td></tr>`)}
-  h+=`<tr class="tot"><td>کۆی ${NAME[k]}</td>${k==='bags'?'<td></td>':''}<td>${fmt(tot[k][0])}</td><td>${fmt(tot[k][1])}</td></tr>`;
+  let h='<tr><th>مواسەفات</th><th>نەوع</th><th>عەدەد</th><th>کێش (کگم)</th></tr>';
+  const ord=SORD[k];
+  rows.sort((a,b)=>sortR(a,b)||ord.indexOf(a.sub)-ord.indexOf(b.sub)).forEach(r=>h+=`<tr><td>${spn(r)}</td><td>${subLbl(k,r.sub)||'-'}</td><td class="n">${fmt(r.q)}</td><td class="n">${fmt(r.kg)}</td></tr>`);
+  h+=`<tr class="tot"><td>کۆی ${NAME[k]}</td><td></td><td>${fmt(tot[k][0])}</td><td>${fmt(tot[k][1])}</td></tr>`;
   return `<div class="box rp"><h3>${title}</h3><table>${h}</table></div>`};
  const b=sec('barrels','🛢 بەرمیل'),g=sec('bags',BAGI+' کیسە');
  const br=Object.values(G.barrels).sort(sortR),bg=Object.values(G.bags);
  reportRows=[];reportLbl=lbl;
- br.forEach(r=>reportRows.push({k:'row',type:'بەرمیل',sub:'',spec:r.spec,q:r.q,kg:r.kg}));
+ SORD.barrels.forEach(sb=>br.filter(r=>r.sub===sb).forEach(r=>reportRows.push({k:'row',type:'بەرمیل',sub:subLbl('barrels',sb),spec:r.spec,q:r.q,kg:r.kg})));
  if(br.length)reportRows.push({k:'tot',type:'کۆی بەرمیل',spec:'',q:tot.barrels[0],kg:tot.barrels[1]});
- ['cage','nocage',''].forEach(sb=>bg.filter(r=>r.sub===sb).sort(sortR).forEach(r=>reportRows.push({k:'row',type:'کیسە',sub:sb?SB[sb]:'',spec:r.spec,q:r.q,kg:r.kg})));
+ SORD.bags.forEach(sb=>bg.filter(r=>r.sub===sb).sort(sortR).forEach(r=>reportRows.push({k:'row',type:'کیسە',sub:subLbl('bags',sb),spec:r.spec,q:r.q,kg:r.kg})));
  if(bg.length)reportRows.push({k:'tot',type:'کۆی کیسە',spec:'',q:tot.bags[0],kg:tot.bags[1]});
  reportRows.push({k:'all',type:'کۆی گشتی',spec:'',q:tot.barrels[0]+tot.bags[0],kg:tot.barrels[1]+tot.bags[1]});
- {const F='\u2068',P='\u2069',R='\u200F',c=v=>F+v+P,LN='──────────────',J=' ┃ ',L=[R+'*📋 ڕاپۆرتی گشتی ڕۆشتوو*',R+'📅 '+c(lbl),LN,R+'*'+['جۆری بار','مواسەفات','عەدەد','کێش (کگم)'].map(c).join(J)+'*',LN];
-  reportRows.forEach(r=>{const ty=r.sub?r.type+' ('+r.sub+')':r.type,sp=r.k==='row'?(r.spec||'نەدیاریکراو'):'—',b=r.k==='row'?'':'*',
+ {const F='\u2068',P='\u2069',R='\u200F',c=v=>F+v+P,LN='──────────────',J=' ┃ ',L=[R+'*📋 ڕاپۆرتی گشتی ڕۆشتوو*',R+'📅 '+c(lbl),LN,R+'*'+['جۆری بار','نەوع/جۆر','عەدەد','کێش (کگم)'].map(c).join(J)+'*',LN];
+  reportRows.forEach(r=>{const ty=r.type,sp=r.k==='row'?(r.spec||'نەدیاریکراو')+(r.sub?' ('+r.sub+')':''):'—',b=r.k==='row'?'':'*',
    cells=[c(ty),c(sp),c(fmt(r.q)),c(fmt(r.kg)+(r.k==='all'?' کگم':''))].join(J);L.push(R+b+cells+b);if(r.k==='tot')L.push(LN)});
   reportText=L.join('\n')}
  const shareBox=`<div class="box rp"><h3>📤 ناردنی ڕاپۆرت</h3><div class="sh"><div class="r3"><button class="b-wa" data-sh="wa">وەتس ئەپ 📄</button><button class="b-tg" data-sh="tg">تێلیگرام</button><button class="b-vb" data-sh="vb">ڤایبەر</button></div></div></div>`;
@@ -303,7 +302,7 @@ const openL=(u,blank)=>{const a=document.createElement('a');a.href=u;if(blank){a
 // ---- PDFی ڕاپۆرت (خشتە) ----
 const PDF_W=1080,PDF_RH=112;
 async function tableCanvas(rows,lbl,o){
- o=o||{};const W=PDF_W,M=36,H=1574,K=2,NV='#0f4c81',cols=[376,262,184,186],RH=90,HH=84,TOP=280,TH=HH+rows.length*RH;
+ o=o||{};const W=PDF_W,M=36,H=1574,K=2,NV='#0f4c81',cols=[230,420,170,188],RH=90,HH=84,TOP=280,TH=HH+rows.length*RH;
  const c=document.createElement('canvas');c.width=W*K;c.height=H*K;const x=c.getContext('2d');x.scale(K,K);
  const FF='"Segoe UI",Tahoma,Arial,sans-serif',rr=(X,Y,w,h,r)=>{x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath()};
  const T=(t,cx,cy,sz,wt,col,al)=>{t=String(t);x.font=wt+' '+sz+'px '+FF;x.fillStyle=col;x.textAlign=al||'center';x.textBaseline='middle';x.direction=/^[\d.,\-\s/—]+$/.test(t)?'ltr':'rtl';x.fillText(t,cx,cy)};
@@ -323,15 +322,16 @@ async function tableCanvas(rows,lbl,o){
  let y=TOP;
  x.save();rr(M,TOP,W-2*M,TH,6);x.clip();
  x.fillStyle=NV;x.fillRect(M,y,W-2*M,HH);
- ['جۆری بار','وردەکاری (قەبارە/جۆر)','عەدەد (دانە)','کێش (کگم)'].forEach((h,i)=>T(h,i?cxs[i]:xs[0]-26,y+HH/2,i?27:32,700,'#ffffff',i?'center':'right'));
+ ['جۆری بار','نەوع/جۆر','عەدەد (دانە)','کێش (کگم)'].forEach((h,i)=>T(h,i?cxs[i]:xs[0]-26,y+HH/2,i?27:32,700,'#ffffff',i?'center':'right'));
  y+=HH;
  rows.forEach((r,n)=>{
   const tot=r.k==='tot',all=r.k==='all',cy=y+RH/2;
   x.fillStyle=all?NV:tot?'#e2e8f0':(n%2?'#f8fafc':'#ffffff');x.fillRect(M,y,W-2*M,RH);
   x.fillStyle=all?NV:'#cbd5e1';x.fillRect(M,y+RH-2,W-2*M,2);
-  const fg=all?'#ffffff':'#0f172a',wt=tot||all?700:400,ty=r.sub?r.type+' ('+r.sub+')':r.type;
+  const fg=all?'#ffffff':'#0f172a',wt=tot||all?700:400,ty=r.type,sp=r.k==='row'?(r.spec||'نەدیاریکراو')+(r.sub?' ('+r.sub+')':''):'—';
+  let fz=36;x.font=wt+' '+fz+'px '+FF;while(fz>20&&x.measureText(sp).width>cols[1]-24){fz--;x.font=wt+' '+fz+'px '+FF}
   T(ty,xs[0]-26,cy,36,wt,fg,'right');
-  T(r.k==='row'?(r.spec||'نەدیاریکراو'):'—',cxs[1],cy,36,wt,fg);
+  T(sp,cxs[1],cy,fz,wt,fg);
   T(fmt(r.q),cxs[2],cy,36,wt,fg);T(fmt(r.kg),cxs[3],cy,36,wt,fg);
   y+=RH});
  x.fillStyle='#cbd5e1';for(let i=1;i<cols.length;i++){x.fillRect(xs[i]-1,TOP+HH,2,TH-HH)}
