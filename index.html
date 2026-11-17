@@ -59,9 +59,14 @@ textarea{width:100%;height:120px;direction:ltr;font:12px monospace;background:va
 .sp button.on{background:var(--ac);color:#fff}
 .go{width:100%;margin-top:10px;padding:10px;border:0;border-radius:10px;background:var(--ac);color:#fff;font:inherit;font-weight:700}
 .x{border:0;background:none;color:#dc2626;padding:6px 10px;line-height:0}
-#rbtn{width:100%;margin:0 0 8px;padding:10px;border:1px solid var(--ac);background:var(--card);color:var(--ac);border-radius:10px;font:inherit;font-weight:700}
+#rbtn,#lbtn{flex:1;width:auto;margin:0;padding:8px 6px;border:1px solid var(--ac);background:var(--card);color:var(--ac);border-radius:10px;font:inherit;font-size:13px;font-weight:700}
 #rbtn.on{background:var(--ac);color:#fff}
+#lbtn{border-color:#b45309;color:#b45309}#lbtn.on{background:#b45309;color:#fff}
+.actrow{display:flex;gap:8px;margin:0 0 8px}
 body.repon #chipsW,body.repon #perW,body.repon #addBtn,body.repon #panel{display:none!important}
+body.loson .bar,body.loson #addBtn,body.loson #panel{display:none!important}
+.lossp label{margin-top:10px}.lossp label:first-child{margin-top:0}.lossp .sp{margin:6px 0 0}
+.lossp .go{background:#b45309}
 .rp h3{margin:0;padding:10px 12px;font-size:15px;color:var(--ac);border-bottom:1px solid var(--bd)}
 .rp .ttl{padding:12px;text-align:center}.rp .ttl b{display:block;font-size:17px;color:var(--ac)}.rp .ttl span{font-size:13px;color:var(--mu)}
 .rp td.n{font-weight:700}.rp td .spc{display:inline-block;padding:2px 12px;border-radius:99px;border:1px solid var(--ac);color:var(--ac);font-weight:700}
@@ -101,7 +106,7 @@ body.adding .bar,body.adding #view{display:none}
 <div class="top"><h1>ئاماری ساحە بەرمیل، کیسە</h1>
 <div id="syncst" data-c="n">...</div></div>
 <div class="tabs"><button id="t1" class="on">ئاماری ڕۆشتوو</button><button id="t2">ئاماری ناو ساحە</button></div>
-<button id="rbtn">📋 ڕاپۆرتی گشتی</button>
+<div class="actrow"><button id="rbtn">📋 ڕاپۆرتی گشتی</button><button id="lbtn">⚠️ خەساربوو</button></div>
 
 <div class="bar">
   <div class="row2" id="rg"><div><label>لە</label><input type="date" id="from"></div><div><label>تا</label><input type="date" id="to"></div></div>
@@ -220,12 +225,12 @@ function panel(){
  `<button class="go" id="sp_add">${y?'زیادکردن بۆ ناو ساحە':'زیادکردنی ڕۆشتوو'}</button>`);
  if(addOpen){el.innerHTML=h;return}
  h+=sp.length?'<div class="sp">'+sp.map((s,i)=>`<button data-s="${i}" class="${s===sel?'on':''}">${esc(s)}</button>`).join('')+'</div>':'<div class="note">هێشتا هیچ مواسەفاتێک پاشەکەوت نەکراوە.</div>';
- if(sel){const i=sm(sel,'yard','qty'),o=sm(sel,'out','qty');
-  h+=cards([[`ژمارەی ${p}ی ${esc(sel)} ${y?'(ماوە لە ساحە)':'(ڕۆشتوو)'}`,fmt(y?i-o:o)]],true);
+ if(sel){const i=sm(sel,'yard','qty'),o=sm(sel,'out','qty'),ls=sm(sel,'loss','qty');
+  h+=cards([[`ژمارەی ${p}ی ${esc(sel)} ${y?'(ماوە لە ساحە)':'(ڕۆشتوو)'}`,fmt(y?i-o-ls:o)]],true);
   const G={};en.filter(e=>e.spec===sel&&e.dir===(y?'yard':'out')).forEach(e=>{const g=G[e.date+'|'+(e.sub||'')]??={q:0,t:0};g.q+=e.qty;g.t+=e.tons});
-  h+=tbl(y?'تۆمارەکانی داخڵبوو':'تۆمارەکانی ڕۆشتوو',['بەروار','عەدەد','تێکڕا','کۆی وەزن',''],Object.keys(G).sort().reverse().map(d=>[d.split('|')[0]+' · '+(subLbl(k,d.split('|')[1])||'-'),fmt(G[d].q),(G[d].q?G[d].t/G[d].q:0).toLocaleString('en-US',{maximumFractionDigits:2}),fmt(G[d].t),`<button class="x" data-x="${d}" aria-label="سڕینەوە">${TRASH}</button>`]));
+  h+=tbl(y?'تۆمارەکانی داخڵبوو':'تۆمارەکانی ڕۆشتوو',['بەروار','نەوع','عەدەد','تێکڕا','کۆی وەزن',''],Object.keys(G).sort().reverse().map(d=>[d.split('|')[0],subLbl(k,d.split('|')[1])||'-',fmt(G[d].q),(G[d].q?G[d].t/G[d].q:0).toLocaleString('en-US',{maximumFractionDigits:2}),fmt(G[d].t),`<button class="x" data-x="${d}" aria-label="سڕینەوە">${TRASH}</button>`]));
   h+='<button class="go" id="sp_del" style="background:#dc2626">سڕینەوەی ئەم مواسەفاتە</button>'}
- else if(sp.length)h+=y?tbl('هەموو مواسەفاتەکان',['مواسەفات','داخڵبوو','ڕۆشتوو','ماوە'],sp.map(s=>[esc(s),fmt(sm(s,'yard','qty')),fmt(sm(s,'out','qty')),fmt(sm(s,'yard','qty')-sm(s,'out','qty'))])):tbl('هەموو مواسەفاتەکان',['مواسەفات','عەدەد','کێش (کگم)'],sp.map(s=>[esc(s),fmt(sm(s,'out','qty')),fmt(sm(s,'out','tons'))]));
+ else if(sp.length)h+=y?tbl('هەموو مواسەفاتەکان',['مواسەفات','داخڵبوو','ڕۆشتوو','خەسار','ماوە'],sp.map(s=>[esc(s),fmt(sm(s,'yard','qty')),fmt(sm(s,'out','qty')),fmt(sm(s,'loss','qty')),fmt(sm(s,'yard','qty')-sm(s,'out','qty')-sm(s,'loss','qty'))])):tbl('هەموو مواسەفاتەکان',['مواسەفات','عەدەد','کێش (کگم)'],sp.map(s=>[esc(s),fmt(sm(s,'out','qty')),fmt(sm(s,'out','tons'))]));
  el.innerHTML=h}
 
 function addEntry(){
@@ -278,12 +283,53 @@ function report(){
  return `<div class="box rp"><div class="ttl"><b>📋 ڕاپۆرتی گشتی ڕۆشتوو</b><span>${lbl}</span></div></div>`+
   cards([['کۆی کێشی (کگم) ڕۆشتوو',fmt(tot.barrels[1]+tot.bags[1])],['کۆی بەرمیل',fmt(tot.barrels[0])],['کۆی کیسە',fmt(tot.bags[0])]],false,-1,true)+b+g+shareBox}
 
+// ---- خەساربوو (کیسە / بەرمیلی خەسارچوو لە ساحە) ----
+let lossOn=false,lossK='',lossSpec='',lossSub='',lossQ='',lossD='';
+function lossView(){
+ const k=lossK,bg=k==='bags',spl=k?(D.specs[k]||[]):[],bt=(a,on,t)=>`<button type="button" ${a} class="${on?'on':''}">${t}</button>`;
+ let h='<div class="panel lossp"><h2 style="color:#b45309">⚠️ خەساربوو</h2><label>١) جۆری خەساربوو</label><div class="sp">'+
+  [['bags','کیسە'],['barrels','بەرمیل']].map(x=>bt('data-lk="'+x[0]+'"',k===x[0],x[1])).join('')+'</div>';
+ if(k){
+  h+='<label>٢) مواسەفات</label>'+(spl.length?'<div class="sp">'+spl.map((x,n)=>bt('data-ls="'+n+'"',x===lossSpec,esc(x))).join('')+'</div>':'<div class="note">هێشتا هیچ مواسەفاتێک پاشەکەوت نەکراوە.</div>');
+  h+='<label>٣) '+(bg?'جۆری جامبۆ':'نەوع (ئیختیاری)')+'</label><div class="sp">'+Object.keys(SUBS(k)).map(x=>bt('data-lsub="'+x+'"',x===lossSub,SUBS(k)[x])).join('')+'</div>';
+  if(lossSpec&&(!bg||lossSub)){
+   const stock=D.manual.filter(e=>e.kind===k&&e.spec===lossSpec&&(!lossSub||(e.sub||'')===lossSub)).reduce((a,e)=>a+(e.dir==='yard'?1:-1)*e.qty,0);
+   h+=cards([['ماوە لە ساحە ('+esc(lossSpec)+(lossSub?' · '+SUBS(k)[lossSub]:'')+')',fmt(stock)]],true)+
+    `<label>عەدەدی ${bg?'کیسەی':'بەرمیلی'} خەساربوو</label><input id="ls_q" type="number" inputmode="numeric" min="0" value="${esc(lossQ)}">`+
+    `<label>بەروار</label><input id="ls_d" type="date" value="${lossD||dayKey(new Date())}">`+
+    '<button class="go" id="ls_ok">تۆمارکردن</button>'}
+ }
+ h+='</div>';
+ const L=D.manual.filter(e=>e.dir==='loss').slice().reverse().sort((a,b)=>String(b.date).localeCompare(String(a.date))),
+  tot={barrels:[0,0],bags:[0,0]};
+ L.forEach(e=>{const a=tot[e.kind];if(a){a[0]+=e.qty;a[1]+=e.tons}});
+ h+=cards([['کۆی کێشی خەسار (کگم)',fmt(tot.barrels[1]+tot.bags[1])],['کۆی بەرمیل',fmt(tot.barrels[0])],['کۆی کیسە',fmt(tot.bags[0])]],false,-1,true);
+ h+=tbl('تۆمارەکانی خەساربوو',['بەروار','جۆر','مواسەفات','نەوع','عەدەد',''],L.slice(0,60).map(e=>[esc(e.date),NAME[e.kind]||'',esc(e.spec),subLbl(e.kind,e.sub)||'-',fmt(e.qty),`<button class="x" data-lx="${esc(e.id)}" aria-label="سڕینەوە">${TRASH}</button>`]));
+ return h}
+function addLoss(){
+ const k=lossK,bg=k==='bags';
+ if(!k){toast('جۆری خەساربوو دیاری بکە');return}
+ if(!lossSpec){toast('مواسەفات دیاری بکە');return}
+ if(bg&&!lossSub){toast('جۆری جامبۆ دیاری بکە');return}
+ const q=+($('ls_q')?$('ls_q').value:lossQ);
+ if(!(q>0)){toast('عەدەدی خەساربوو بنووسە');return}
+ const av=+(D.avg[k+'|'+lossSpec]??D.avg[k]??0)||0;
+ D.manual.push({id:Date.now()+'-'+Math.random().toString(36).slice(2,6),dir:'loss',kind:k,spec:lossSpec,qty:q,avg:av,tons:q*av,cars:0,sub:lossSub,date:($('ls_d')&&$('ls_d').value)||dayKey(new Date())});
+ lossQ='';save();draw();toast('خەسار تۆمار کرا ✓')}
+$('view').addEventListener('click',e=>{if(!lossOn)return;const t=e.target.closest('button');if(!t)return;const d=t.dataset;
+ if(d.lk){lossK=lossK===d.lk?'':d.lk;lossSpec='';lossSub='';lossQ='';return draw()}
+ if(d.ls!==undefined){const v=(D.specs[lossK]||[])[+d.ls];lossSpec=lossSpec===v?'':v;return draw()}
+ if(d.lsub){lossSub=lossSub===d.lsub?'':d.lsub;return draw()}
+ if(t.id==='ls_ok')return addLoss();
+ if(d.lx){const id=d.lx;ask('دەتەوێت ئەم داتایە بسڕیتەوە؟',()=>{D.manual=D.manual.filter(m=>m.id!==id);save();draw()})}});
+$('view').addEventListener('input',e=>{if(e.target.id==='ls_q')lossQ=e.target.value;if(e.target.id==='ls_d')lossD=e.target.value});
+
 function draw(keep){
- $('t1').classList.toggle('on',tab===1&&!repOn);$('t2').classList.toggle('on',tab===2&&!repOn);$('rbtn').classList.toggle('on',repOn);document.body.classList.toggle('repon',repOn);
+ $('t1').classList.toggle('on',tab===1&&!repOn&&!lossOn);$('t2').classList.toggle('on',tab===2&&!repOn&&!lossOn);$('rbtn').classList.toggle('on',repOn);$('lbtn').classList.toggle('on',lossOn);document.body.classList.toggle('repon',repOn);document.body.classList.toggle('loson',lossOn);
  $('perW').style.display=tab===1?'':'none';
  $('chips').innerHTML=['بەرمیل','کیسە'].map(o=>`<button class="chip${picks.has(o)?' on':''}" data-o="${o}">${o}</button>`).join('');
- $('view').innerHTML=repOn?report():tab===1?outgoing():yard();
- if(repOn)setTimeout(()=>{if(repOn)getPdf().catch(()=>{})},300);
+ $('view').innerHTML=lossOn?lossView():repOn?report():tab===1?outgoing():yard();
+ if(repOn&&!lossOn)setTimeout(()=>{if(repOn)getPdf().catch(()=>{})},300);
  if(!keep)panel()}
 function save(){try{localStorage.setItem('sw_stats',JSON.stringify(D))}catch(e){}try{window.SYNC&&window.SYNC.push()}catch(e){}}
 function setData(o){
@@ -295,7 +341,7 @@ function setData(o){
  D={manifests:hasB?(o.manifests||[]):(D.manifests||[]),pool:hasB?(o.pool||[]):(D.pool||[]),manual:Array.from(mm.values()),specs:sp,avg:Object.assign({},D.avg||{},o.avg||{})};
  save();draw();
  if(hasB&&window.SYNC)window.SYNC.bulk()}
-const goTab=n=>{repOn=false;tab=n;sel='';subSel='';addOpen=false;picks.clear();draw()};
+const goTab=n=>{repOn=false;lossOn=false;lossK=lossSpec=lossSub=lossQ='';tab=n;sel='';subSel='';addOpen=false;picks.clear();draw()};
 // ---- ناردنی ڕاپۆرت ----
 const copyTxt=async t=>{try{await navigator.clipboard.writeText(t);return true}catch(e){try{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();return ok}catch(e2){return false}}};
 const openL=(u,blank)=>{const a=document.createElement('a');a.href=u;if(blank){a.target='_blank';a.rel='noopener'}document.body.appendChild(a);a.click();a.remove()};
@@ -432,7 +478,8 @@ async function share(k){
  }catch(e){toast((await copyTxt(t))?'ناردن نەکرا، بەڵام ڕاپۆرتەکە لەبەرگیرایەوە — لە ئەپەکە paste بکە':'ناردن سەرکەوتوو نەبوو')}}
 $('view').onclick=async e=>{const q=e.target.closest('button[data-wn],button[data-wd],button[data-wadd]');if(q){if(q.dataset.wadd)return addWA();if(q.dataset.wd!==undefined){const i=+q.dataset.wd;return ask('دەتەوێت ئەم ژمارەیە بسڕیتەوە؟',()=>{WA.splice(i,1);saveWA();draw(true)})}sendToNum(+q.dataset.wn);return}const b=e.target.closest('button[data-sh]');if(!b)return;const k=b.dataset.sh;if(k==='wa'||k==='vb'||k==='tg'){try{await sharePdf(false,k)}catch(err){toast('دروستکردنی PDF سەرکەوتوو نەبوو')}}else share(k)};
 
-$('rbtn').onclick=()=>{repOn=!repOn;if(repOn){addOpen=false;picks.clear();sel='';subSel=''}draw()};
+$('rbtn').onclick=()=>{repOn=!repOn;if(repOn){lossOn=false;addOpen=false;picks.clear();sel='';subSel=''}draw()};
+$('lbtn').onclick=()=>{lossOn=!lossOn;lossK=lossSpec=lossSub=lossQ='';if(lossOn){repOn=false;addOpen=false;picks.clear();sel='';subSel=''}draw()};
 $('t1').onclick=()=>goTab(1);$('t2').onclick=()=>goTab(2);
 ['per','from','to'].forEach(i=>$(i).onchange=()=>{draw(true);if(!addOpen)panel()});
 $('chips').onclick=e=>{const o=e.target.dataset.o;if(!o)return;const had=picks.has(o);picks.clear();if(!had)picks.add(o);sel='';subSel='';draw()};
