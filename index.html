@@ -180,10 +180,10 @@ function outgoing(){
  const by={},add=(d,c,t,b,s)=>{const r=by[pk(d)]??=[0,0,0,0];r[0]+=c;r[1]+=t;r[2]+=b;r[3]+=s};
  rows.filter(x=>inW(toD(x.InvoiceDate))).forEach(x=>{const k=cls(x.Unit);add(toD(x.InvoiceDate),1,+x.NetWeight||0,k==='barrels'?barrelQty(x):0,k==='bags'?+x.Quantity||0:0)});
  mn.filter(e=>inW(toD(e.date+'T00:00'))).forEach(e=>add(toD(e.date+'T00:00'),e.cars,e.tons,e.kind==='barrels'?e.qty:0,e.kind==='bags'?e.qty:0));
- const body=Object.keys(by).sort().map(k=>[k,...by[k].map(fmt)]);
+ const body=Object.keys(by).sort().map(k=>[k,...by[k].slice(1).map(fmt)]);
  return cards([['کۆی کێشی سافی (کگم)',fmt(g.barrels[1]+g.bags[1])],['کۆی بەرمیل',fmt(g.barrels[2])],['کۆی کیسە',fmt(g.bags[2])]],false,-1,true)+
-  tbl('',['جۆری بار','ئۆتۆمبیل','کێشی سافی (کگم)','عەدەد'],[['🛢 بەرمیل',...g.barrels.map(fmt)],[BAGI+' کیسە',...g.bags.map(fmt)]])+
-  tbl('بەپێی بەروار',['بەروار','ئۆتۆمبیل','کێشی سافی (کگم)','بەرمیل','کیسە'],body)}
+  tbl('',['جۆری بار','کێشی سافی (کگم)','عەدەد'],[['🛢 بەرمیل',fmt(g.barrels[1]),fmt(g.barrels[2])],[BAGI+' کیسە',fmt(g.bags[1]),fmt(g.bags[2])]])+
+  tbl('بەپێی بەروار',['بەروار','کێشی سافی (کگم)','بەرمیل','کیسە'],body)}
 
 // ---- ئاماری ناو ساحە: ماوە = داخڵبوو − ڕۆشتوو (هێنراو + دەستی) ----
 function yard(){
@@ -256,14 +256,12 @@ function report(){
  const sec=(k,title)=>{
   const rows=Object.values(G[k]);rows.forEach(r=>{tot[k][0]+=r.q;tot[k][1]+=r.kg});
   if(!rows.length)return `<div class="box rp"><h3>${title}</h3><div class="none">هیچ داتایەک نییە</div></div>`;
-  let h='<tr><th>مواسەفات</th><th>عەدەد</th><th>کێش (کگم)</th></tr>';
+  let h=k==='barrels'?'<tr><th>مواسەفات</th><th>عەدەد</th><th>کێش (کگم)</th></tr>':'<tr><th>مواسەفات</th><th>نەوع</th><th>عەدەد</th><th>کێش (کگم)</th></tr>';
   if(k==='barrels'){rows.sort(sortR).forEach(r=>h+=`<tr><td>${spn(r)}</td><td class="n">${fmt(r.q)}</td><td class="n">${fmt(r.kg)}</td></tr>`)}
   else{
-   const order=['cage','nocage',''];
-   order.forEach(sb=>{const g=rows.filter(r=>r.sub===sb).sort(sortR);if(!g.length)return;
-    h+=`<tr class="grp"><td>${sb?SB[sb]:'جۆر نەدیاریکراو'}</td><td>${fmt(g.reduce((a,r)=>a+r.q,0))}</td><td>${fmt(g.reduce((a,r)=>a+r.kg,0))}</td></tr>`;
-    g.forEach(r=>h+=`<tr><td>${spn(r)}</td><td class="n">${fmt(r.q)}</td><td class="n">${fmt(r.kg)}</td></tr>`)})}
-  h+=`<tr class="tot"><td>کۆی ${NAME[k]}</td><td>${fmt(tot[k][0])}</td><td>${fmt(tot[k][1])}</td></tr>`;
+   const ord={cage:0,nocage:1,'':2};
+   rows.sort((a,b)=>sortR(a,b)||ord[a.sub]-ord[b.sub]).forEach(r=>h+=`<tr><td>${spn(r)}</td><td>${r.sub?SB[r.sub]:'-'}</td><td class="n">${fmt(r.q)}</td><td class="n">${fmt(r.kg)}</td></tr>`)}
+  h+=`<tr class="tot"><td>کۆی ${NAME[k]}</td>${k==='bags'?'<td></td>':''}<td>${fmt(tot[k][0])}</td><td>${fmt(tot[k][1])}</td></tr>`;
   return `<div class="box rp"><h3>${title}</h3><table>${h}</table></div>`};
  const b=sec('barrels','🛢 بەرمیل'),g=sec('bags',BAGI+' کیسە');
  const br=Object.values(G.barrels).sort(sortR),bg=Object.values(G.bags);
