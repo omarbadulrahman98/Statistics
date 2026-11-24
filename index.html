@@ -42,7 +42,8 @@ body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 "Segoe UI",Taho
 .pg button{width:36px;height:36px;border-radius:50%;border:1px solid var(--bd);background:var(--card);color:var(--tx);display:grid;place-items:center;padding:0}
 .pg button:disabled{opacity:.35}.pg svg{width:18px;height:18px}
 .dl{position:relative;background:var(--card);border:1px solid var(--bd);border-radius:24px;overflow-y:auto;overflow-x:hidden}
-.dl{scrollbar-width:thin;scrollbar-color:var(--bd) transparent}.card b{direction:ltr;unicode-bidi:isolate}.dn{padding:22px 12px;text-align:center;color:var(--mu)}.mc{justify-content:center}
+.dl{scrollbar-width:thin;scrollbar-color:var(--bd) transparent}.card b{direction:ltr;unicode-bidi:isolate}.fr{font-size:12.5px;color:var(--at);border:1px solid var(--at);border-radius:99px;padding:6px 12px;white-space:nowrap}.dd b.sm{font-size:16px}
+.dn{padding:22px 12px;text-align:center;color:var(--mu)}.mc{justify-content:center}
 .dh,.dr{display:grid;grid-template-columns:56px 1fr 56px;gap:6px;align-items:center;padding:0 12px}
 .dh{position:sticky;top:0;z-index:2;background:var(--hv);font-size:12px;color:var(--mu);min-height:34px;border-bottom:1px solid var(--bd)}
 .dh span:first-child,.dh span:last-child{text-align:center}
@@ -95,7 +96,7 @@ textarea{width:100%;height:120px;direction:ltr;font:12px monospace;background:va
 .sp button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
 .go{width:100%;margin-top:12px;padding:15px;border:0;border-radius:20px;background:linear-gradient(135deg,#0a5d7c,#0e9ab8 60%,#16c1dd);color:#fff;font:inherit;font-weight:800;font-size:16px;box-shadow:var(--sh)}
 .x{border:0;background:none;color:#ef4444;padding:6px 10px;line-height:0}
-body.repon #chipsW,body.repon #perW,body.repon #addBtn,body.repon #panel{display:none!important}
+body.repon #chipsW,body.repon #clrW,body.repon #addBtn,body.repon #panel{display:none!important}
 body.homeon .bar,body.homeon #addBtn,body.homeon #panel{display:none!important}
 body.loson .bar,body.loson #addBtn,body.loson #panel{display:none!important}
 .lossp label{margin-top:10px}.lossp label:first-child{margin-top:0}.lossp .sp{margin:6px 0 0}
@@ -141,7 +142,7 @@ body.adding .bar,body.adding #view{display:none}
 
 <div class="bar">
   <div class="row2" id="rg"><div><label>لە</label><input type="date" id="from"></div><div><label>تا</label><input type="date" id="to"></div></div>
-  <div id="perW"><label>جۆری ڕاپۆرت</label><select id="per"><option value="d">ڕۆژانە</option><option value="m">مانگانە</option></select></div>
+  <div id="clrW" hidden><button type="button" class="chip" id="clr">✕ لابردنی فلتەر</button></div>
   <div id="chipsW"><label>جۆری بار (کرتە بکە بۆ مواسەفات)</label><div class="chips" id="chips"></div></div>
 </div>
 
@@ -211,19 +212,14 @@ function ask(m,cb){const d=$('dlg');$('dlgT').textContent=m;d.classList.add('sho
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),2800)}
 
 function outgoing(){
- const inW=win(),pk=$('per').value==='m'?d=>dayKey(d).slice(0,7):dayKey;
- let rows=done().filter(x=>cls(x.Unit)!=='tanker'),mn=D.manual.filter(e=>e.dir==='out');
+ const inW=win();
+ let rows=done().filter(x=>cls(x.Unit)!=='tanker'&&inW(toD(x.InvoiceDate))),mn=D.manual.filter(e=>e.dir==='out'&&inW(toD(e.date+'T00:00')));
  if(picks.size){rows=rows.filter(x=>picks.has(NAME[cls(x.Unit)]));mn=mn.filter(e=>picks.has(NAME[e.kind]))}
  const g={barrels:[0,0,0],bags:[0,0,0]};
  rows.forEach(x=>{const k=cls(x.Unit),a=g[k];a[0]++;a[1]+=+x.NetWeight||0;a[2]+=k==='barrels'?barrelQty(x):(+x.Quantity||0)});
  mn.forEach(e=>{const a=g[e.kind];a[0]+=e.cars;a[1]+=e.tons;a[2]+=e.qty});
- const by={},add=(d,c,t,b,s)=>{const r=by[pk(d)]??=[0,0,0,0];r[0]+=c;r[1]+=t;r[2]+=b;r[3]+=s};
- rows.filter(x=>inW(toD(x.InvoiceDate))).forEach(x=>{const k=cls(x.Unit);add(toD(x.InvoiceDate),1,+x.NetWeight||0,k==='barrels'?barrelQty(x):0,k==='bags'?+x.Quantity||0:0)});
- mn.filter(e=>inW(toD(e.date+'T00:00'))).forEach(e=>add(toD(e.date+'T00:00'),e.cars,e.tons,e.kind==='barrels'?e.qty:0,e.kind==='bags'?e.qty:0));
- const body=Object.keys(by).sort().map(k=>[k,...by[k].slice(1).map(fmt)]);
  return cards([['کۆی کێشی سافی (کگم)',fmt(g.barrels[1]+g.bags[1])],['کۆی بەرمیل',fmt(g.barrels[2])],['کۆی کیسە',fmt(g.bags[2])]],false,-1,true)+
-  tbl('',['جۆری بار','کێشی سافی (کگم)','عەدەد'],[['🛢 بەرمیل',fmt(g.barrels[1]),fmt(g.barrels[2])],[BAGI+' کیسە',fmt(g.bags[1]),fmt(g.bags[2])]])+
-  tbl('بەپێی بەروار',['بەروار','کێشی سافی (کگم)','بەرمیل','کیسە'],body)}
+  tbl('',['جۆری بار','کێشی سافی (کگم)','عەدەد'],[['🛢 بەرمیل',fmt(g.barrels[1]),fmt(g.barrels[2])],[BAGI+' کیسە',fmt(g.bags[1]),fmt(g.bags[2])]])}
 
 // ---- ئاماری ناو ساحە: ماوە = داخڵبوو − ڕۆشتوو (هێنراو + دەستی) ----
 function yardTotals(){
@@ -393,8 +389,8 @@ const _n=new Date();let hTab='out',hY=_n.getFullYear(),hM=_n.getMonth();
 const tonF=kg=>{const t=Math.round(((+kg||0)/1000)*100)/100,[i,f]=Math.abs(t).toFixed(2).split('.');return (t<0?'-':'')+i.replace(/\B(?=(\d{3})+(?!\d))/g,',')+','+f};
 const isBagC=c=>String(c.ItemType||'').trim()==='کیسە',isTkC=c=>String(c.ItemType||'').trim()==='تەنکەر';
 const ICO={barrels:'🛢',bags:BAGI};
-function homeItems(mode,ym){
- const it=[],push=(ds,k,sub,spec,q,kg)=>{ds=String(ds||'');if(ds.slice(0,7)!==ym||!KIND_OK[k])return;q=+q||0;kg=+kg||0;if(q||kg)it.push({d:+ds.slice(8,10),k,sub:sub||'',spec:spec||'',q,kg})};
+function homeItems(mode){
+ const it=[],push=(ds,k,sub,spec,q,kg)=>{ds=String(ds||'');if(!/^\d{4}-\d{2}-\d{2}/.test(ds)||!KIND_OK[k])return;q=+q||0;kg=+kg||0;if(q||kg)it.push({ds:ds.slice(0,10),k,sub:sub||'',spec:spec||'',q,kg})};
  if(mode==='out')done().forEach(x=>{const k=cls(x.Unit);if(k==='tanker')return;push(dayKey(toD(x.InvoiceDate)),k,'','',k==='barrels'?barrelQty(x):(+x.Quantity||0),+x.NetWeight||0)});
  if(mode==='yard')D.pool.forEach(c=>{if(String(c.TransferTo||'').trim()||isTkC(c)||!(+c.Quantity>0)||!(+c.UnitKg>0))return;push(dayKey(toD(c.SavedDate)),isBagC(c)?'bags':'barrels','','',c.Quantity,c.Quantity*c.UnitKg)});
  const dir=mode==='out'?'out':mode==='yard'?'yard':'loss';
@@ -405,7 +401,7 @@ function pager(){const atNow=hY===_n.getFullYear()&&hM===_n.getMonth();
  return `<div class="pg"><button data-mn="-1" aria-label="مانگی پێشوو">${IC.prev}</button><span>${MON[hM]} ${hY}</span><button data-mn="1" aria-label="مانگی دواتر" ${atNow?'disabled':''}>${IC.next}</button></div>`}
 function monthTotals(mode){const t={barrels:0,bags:0,kg:0};
  if(mode==='yard'){const T=yardTotals();t.barrels=T.barrels[1];t.bags=T.bags[1];t.kg=T.barrels[0]+T.bags[0]}
- else homeItems(mode,hY+'-'+String(hM+1).padStart(2,'0')).forEach(x=>{t[x.k]+=x.q;t.kg+=x.kg});
+ else{const ym=hY+'-'+String(hM+1).padStart(2,'0');homeItems(mode).filter(x=>x.ds.slice(0,7)===ym).forEach(x=>{t[x.k]+=x.q;t.kg+=x.kg})}
  return t}
 function homeView(){
  const H=HT[hTab],tot=monthTotals(hTab);
@@ -416,18 +412,19 @@ function homeView(){
  return seg+hero+(hTab==='yard'?'':`<div class="mn mc">${pager()}</div>`)}
 // لیستی ڕۆژانە بۆ ناو تابی ڕۆشتوو / ناوساحە / خەساربوو — تەنها ئەو ڕۆژانەی داتایان هەیە
 function dayList(mode){
- const H=HT[mode],ym=hY+'-'+String(hM+1).padStart(2,'0'),items=homeItems(mode,ym),n=new Date(hY,hM+1,0).getDate();
- const by=Array.from({length:n+1},()=>({}));
- items.forEach(x=>{if(x.d<1||x.d>n)return;const key=x.k+'|'+x.sub+'|'+x.spec,g=by[x.d][key]??={k:x.k,sub:x.sub,spec:x.spec,q:0,kg:0};g.q+=x.q;g.kg+=x.kg});
- const ord=k=>k==='barrels'?0:1,atNow=hY===_n.getFullYear()&&hM===_n.getMonth();let rows='';
- for(let d=1;d<=n;d++){
-  const gs=Object.values(by[d]);if(!gs.length)continue;
-  gs.sort((a,b)=>ord(a.k)-ord(b.k)||String(a.spec).localeCompare(String(b.spec),undefined,{numeric:true})||String(a.sub).localeCompare(String(b.sub)));
-  const kg=gs.reduce((s,g)=>s+g.kg,0),wd=WD[new Date(hY,hM,d).getDay()],td=atNow&&d===_n.getDate();
+ const H=HT[mode],f=$('from').value,t=$('to').value,flt=mode!=='loss'&&!!(f||t),ym=hY+'-'+String(hM+1).padStart(2,'0'),today=dayKey(new Date());
+ const items=homeItems(mode).filter(x=>flt?(!f||x.ds>=f)&&(!t||x.ds<=t):x.ds.slice(0,7)===ym);
+ const by={};
+ items.forEach(x=>{const key=x.k+'|'+x.sub+'|'+x.spec,g=(by[x.ds]??={})[key]??={k:x.k,sub:x.sub,spec:x.spec,q:0,kg:0};g.q+=x.q;g.kg+=x.kg});
+ const days=Object.keys(by).sort(),multi=flt&&new Set(days.map(d=>d.slice(0,7))).size>1,ord=k=>k==='barrels'?0:1;let rows='';
+ days.forEach(ds=>{
+  const gs=Object.values(by[ds]).sort((a,b)=>ord(a.k)-ord(b.k)||String(a.spec).localeCompare(String(b.spec),undefined,{numeric:true})||String(a.sub).localeCompare(String(b.sub)));
+  const [Y,M,Dd]=ds.split('-').map(Number),kg=gs.reduce((s,g)=>s+g.kg,0),wd=WD[new Date(Y,M-1,Dd).getDay()];
   const chips=gs.map(g=>{const nm=[g.spec?esc(g.spec):'نەدیاریکراو',subLbl(g.k,g.sub)].filter(Boolean).join(' · ');
    return `<span class="it">${ICO[g.k]}<em>${nm}</em><b>${fmt(g.q)}</b><small>${NAME[g.k]}</small></span>`}).join('');
-  rows+=`<div class="dr${td?' td':''}"><div class="dd"><b>${d}</b><span>${wd}</span></div><div class="di">${chips}</div><div class="dt"><b dir="ltr">${tonF(kg)}</b><span>تۆن</span></div></div>`}
- return `<div class="mn"><h2>${H.list}</h2>${pager()}</div><div class="dl" id="dl"><div class="dh"><span>ڕۆژ</span><span>جۆر / نەوع / عەدەد</span><span>کێش</span></div>${rows||'<div class="dn">هیچ داتایەک نییە</div>'}</div>`}
+  rows+=`<div class="dr${ds===today?' td':''}"><div class="dd"><b dir="ltr"${multi?' class="sm"':''}>${multi?M+'/'+Dd:Dd}</b><span>${wd}</span></div><div class="di">${chips}</div><div class="dt"><b dir="ltr">${tonF(kg)}</b><span>تۆن</span></div></div>`});
+ const head=flt?`<span class="fr"><bdi dir="ltr">${f||'…'}</bdi> – <bdi dir="ltr">${t||'…'}</bdi></span>`:pager();
+ return `<div class="mn"><h2>${H.list}</h2>${head}</div><div class="dl" id="dl"><div class="dh"><span>ڕۆژ</span><span>جۆر / نەوع / عەدەد</span><span>کێش</span></div>${rows||`<div class="dn">${flt?'هیچ داتایەک نییە لەم ماوەیەدا':'هیچ داتایەک نییە'}</div>`}</div>`}
 // لیست تا ١٠ ڕۆژ دیار دەبێت، دوای ئەوە سکرۆڵ دەکرێت
 function homeFit(){const dl=$('dl');if(!dl)return;const r=dl.querySelectorAll('.dr');
  if(r.length>10){const x=r[9];dl.style.maxHeight=(x.offsetTop+x.offsetHeight+1)+'px'}}
@@ -439,7 +436,7 @@ function draw(keep){
  const pg=homeOn?'home':repOn?'rep':lossOn?'loss':tab===1?'out':'yard';
  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===pg));
  document.body.classList.toggle('repon',repOn);document.body.classList.toggle('loson',lossOn);document.body.classList.toggle('homeon',homeOn);
- $('perW').style.display=tab===1?'':'none';
+ $('clrW').hidden=repOn||homeOn||lossOn||!($('from').value||$('to').value);
  $('chips').innerHTML=['بەرمیل','کیسە'].map(o=>`<button class="chip${picks.has(o)?' on':''}" data-o="${o}">${o}</button>`).join('');
  $('view').innerHTML=homeOn?homeView():(lossOn?lossView():repOn?report():tab===1?outgoing():yard())+(repOn?'':dayList(lossOn?'loss':tab===1?'out':'yard'));
  const T=PT[pg];$('ttl').textContent=T[0];$('sub').textContent=T[1];
@@ -456,7 +453,7 @@ function setData(o){
  D={manifests:hasB?(o.manifests||[]):(D.manifests||[]),pool:hasB?(o.pool||[]):(D.pool||[]),manual:Array.from(mm.values()),specs:sp,avg:Object.assign({},D.avg||{},o.avg||{})};
  save();draw();
  if(hasB&&window.SYNC)window.SYNC.bulk()}
-function setPage(p){homeOn=p==='home';repOn=p==='rep';lossOn=p==='loss';if(p==='out')tab=1;if(p==='yard')tab=2;lossK=lossSpec=lossSub=lossQ='';sel='';subSel='';addOpen=false;picks.clear();draw();window.scrollTo(0,0)}
+function setPage(p){const nw=new Date();hY=nw.getFullYear();hM=nw.getMonth();$('from').value=$('to').value=p==='rep'?dayKey(nw):'';homeOn=p==='home';repOn=p==='rep';lossOn=p==='loss';if(p==='out')tab=1;if(p==='yard')tab=2;lossK=lossSpec=lossSub=lossQ='';sel='';subSel='';addOpen=false;picks.clear();draw();window.scrollTo(0,0)}
 // ---- ناردنی ڕاپۆرت ----
 const copyTxt=async t=>{try{await navigator.clipboard.writeText(t);return true}catch(e){try{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();return ok}catch(e2){return false}}};
 const openL=(u,blank)=>{const a=document.createElement('a');a.href=u;if(blank){a.target='_blank';a.rel='noopener'}document.body.appendChild(a);a.click();a.remove()};
@@ -594,7 +591,8 @@ async function share(k){
 $('view').onclick=async e=>{const q=e.target.closest('button[data-wn],button[data-wd],button[data-wadd]');if(q){if(q.dataset.wadd)return addWA();if(q.dataset.wd!==undefined){const i=+q.dataset.wd;return ask('دەتەوێت ئەم ژمارەیە بسڕیتەوە؟',()=>{WA.splice(i,1);saveWA();draw(true)})}sendToNum(+q.dataset.wn);return}const b=e.target.closest('button[data-sh]');if(!b)return;const k=b.dataset.sh;if(k==='wa'||k==='vb'||k==='tg'){try{await sharePdf(false,k)}catch(err){toast('دروستکردنی PDF سەرکەوتوو نەبوو')}}else share(k)};
 
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>setPage(b.dataset.p));
-['per','from','to'].forEach(i=>$(i).onchange=()=>{draw(true);if(!addOpen)panel()});
+['from','to'].forEach(i=>$(i).onchange=()=>{draw(true);if(!addOpen)panel()});
+$('clr').onclick=()=>{$('from').value=$('to').value='';draw(true);if(!addOpen)panel()};
 $('chips').onclick=e=>{const o=e.target.dataset.o;if(!o)return;const had=picks.has(o);picks.clear();if(!had)picks.add(o);sel='';subSel='';draw()};
 $('panel').onclick=e=>{const t=e.target.closest('button');if(!t)return;const k=KIND[[...picks][0]];
  if(t.id==='sp_add')return addEntry();
@@ -611,7 +609,7 @@ try{const s=localStorage.getItem('sw_stats');if(s)D=Object.assign({manifests:[],
 // ---- هەناردە / هێنانی داتا ----
 $('bkE').onclick=async()=>{const jb=new Blob([JSON.stringify(Object.assign({},D,{wa:WA}))],{type:'application/json'});if(window.Android&&typeof window.Android.shareFile==='function'){window.Android.shareFile(await b64(jb),'sw-data-'+dayKey(new Date())+'.json','application/json');return}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(Object.assign({},D,{wa:WA}))],{type:'application/json'}));a.download='sw-data-'+dayKey(new Date())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('داتا هەڵگیرا ✓')};
 $('bkI').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await f.text());if(!o||typeof o!=='object'||!('manual' in o||'manifests' in o))throw 0;if(Array.isArray(o.wa)){WA=o.wa;saveWA()}setData(o);toast('داتا هێنرایەوە ✓')}catch(x){toast('فایلەکە دروست نییە')}e.target.value=''};
-$('from').value=$('to').value=dayKey(new Date());
+$('from').value=$('to').value='';
 draw();
 </script>
 <script type="module">
