@@ -43,6 +43,7 @@ body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 "Segoe UI",Taho
 .pg button:disabled{opacity:.35}.pg svg{width:18px;height:18px}
 .dl{position:relative;background:var(--card);border:1px solid var(--bd);border-radius:24px;overflow-y:auto;overflow-x:hidden}
 .dl{scrollbar-width:thin;scrollbar-color:var(--bd) transparent}.card b{direction:ltr;unicode-bidi:isolate}.fr{font-size:12.5px;color:var(--at);border:1px solid var(--at);border-radius:99px;padding:6px 12px;white-space:nowrap}.dd b.sm{font-size:16px}
+body:not(.repon) #bk{display:none}
 .dn{padding:22px 12px;text-align:center;color:var(--mu)}.mc{justify-content:center}
 .dh,.dr{display:grid;grid-template-columns:56px 1fr 56px;gap:6px;align-items:center;padding:0 12px}
 .dh{position:sticky;top:0;z-index:2;background:var(--hv);font-size:12px;color:var(--mu);min-height:34px;border-bottom:1px solid var(--bd)}
@@ -55,6 +56,17 @@ body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 "Segoe UI",Taho
 .dr.td .it{background:var(--card)}
 .it em{font-style:normal;color:var(--mu);font-size:12px}.it b{font-size:14px}.it small{color:var(--mu);font-size:11px}
 .dt{text-align:center;line-height:1.2}.dt b{display:block;font-size:15px}.dt span{font-size:11px;color:var(--mu)}
+.ed{width:32px;height:30px;margin-top:4px;border:1px solid var(--bd);background:var(--hv);border-radius:10px;padding:0;font-size:14px;line-height:1}
+#edt{position:fixed;inset:0;z-index:150;background:rgba(2,8,20,.62);display:none;align-items:flex-end;justify-content:center}
+#edt.show{display:flex}
+#edt .sheet{background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:28px 28px 0 0;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+#edt .shh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}#edt .shh h3{margin:0;font-size:18px}
+#edt .ee{border:1px solid var(--bd);border-radius:20px;padding:12px;margin-bottom:12px;background:var(--hv)}
+#edt .et{display:flex;align-items:center;justify-content:space-between;font-weight:700}
+#edt label{display:block;font-size:12px;color:var(--mu);margin:10px 0 4px}
+#edt #edSave{position:sticky;bottom:0}
+#edt .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#edt input,#edt select{width:100%;padding:11px;border-radius:14px;border:1px solid var(--bd);background:var(--inp);color:var(--tx);font:inherit}
 #nav{position:fixed;left:0;right:0;bottom:0;z-index:100;display:flex;gap:2px;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));background:var(--nav);border-top:1px solid var(--bd)}
 #nav button{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:transparent;color:var(--mu);font:inherit;font-size:12px;font-weight:700;padding:8px 2px;border-radius:20px}
 #nav button{-webkit-tap-highlight-color:transparent}#nav button:not(.on){background:transparent}#nav button.on{background:var(--pill);color:var(--tx)}#nav svg{width:25px;height:25px}
@@ -149,6 +161,7 @@ body.adding .bar,body.adding #view{display:none}
 <nav id="nav" aria-label="بەشەکان">
 <button id="n_out" data-p="out"></button><button id="n_yard" data-p="yard"></button><button id="n_home" data-p="home"></button><button id="n_loss" data-p="loss"></button><button id="n_rep" data-p="rep"></button>
 </nav>
+<div id="edt" role="dialog" aria-modal="true" aria-labelledby="edtT"><div class="sheet"><div class="shh"><h3 id="edtT"></h3><button class="ib" id="edtX" aria-label="داخستن">✕</button></div><div id="edtB"></div><button class="go" id="edSave">پاشەکەوتکردن</button></div></div>
 <div id="toast"></div>
 <div id="dlg"><div class="bx"><div class="tx" id="dlgT"></div><input id="dlgI" type="text" autocomplete="off" style="display:none;width:100%;padding:10px;margin:-6px 0 14px;border:1px solid var(--bd);border-radius:12px;font:inherit;font-size:15px;background:var(--inp);color:var(--tx)"><div class="bt"><button id="dlgY">بەڵێ</button><button id="dlgN">نەخێر</button></div></div></div>
 <button class="go" id="addBtn">داخڵکردنی ڕۆشتووەکان</button>
@@ -422,15 +435,53 @@ function dayList(mode){
   const [Y,M,Dd]=ds.split('-').map(Number),kg=gs.reduce((s,g)=>s+g.kg,0),wd=WD[new Date(Y,M-1,Dd).getDay()];
   const chips=gs.map(g=>{const nm=[g.spec?esc(g.spec):'نەدیاریکراو',subLbl(g.k,g.sub)].filter(Boolean).join(' · ');
    return `<span class="it">${ICO[g.k]}<em>${nm}</em><b>${fmt(g.q)}</b><small>${NAME[g.k]}</small></span>`}).join('');
-  rows+=`<div class="dr${ds===today?' td':''}"><div class="dd"><b dir="ltr"${multi?' class="sm"':''}>${multi?M+'/'+Dd:Dd}</b><span>${wd}</span></div><div class="di">${chips}</div><div class="dt"><b dir="ltr">${tonF(kg)}</b><span>تۆن</span></div></div>`});
+  rows+=`<div class="dr${ds===today?' td':''}"><div class="dd"><b dir="ltr"${multi?' class="sm"':''}>${multi?M+'/'+Dd:Dd}</b><span>${wd}</span></div><div class="di">${chips}</div><div class="dt"><b dir="ltr">${tonF(kg)}</b>${D.manual.some(e=>e.dir===mode&&String(e.date).slice(0,10)===ds)?`<button class="ed" data-ed="${ds}" data-em="${mode}" aria-label="دەستکاری">✏️</button>`:''}</div></div>`});
  const head=flt?`<span class="fr"><bdi dir="ltr">${f||'…'}</bdi> – <bdi dir="ltr">${t||'…'}</bdi></span>`:pager();
- return `<div class="mn"><h2>${H.list}</h2>${head}</div><div class="dl" id="dl"><div class="dh"><span>ڕۆژ</span><span>جۆر / نەوع / عەدەد</span><span>کێش</span></div>${rows||`<div class="dn">${flt?'هیچ داتایەک نییە لەم ماوەیەدا':'هیچ داتایەک نییە'}</div>`}</div>`}
+ return `<div class="mn"><h2>${H.list}</h2>${head}</div><div class="dl" id="dl"><div class="dh"><span>ڕۆژ</span><span>جۆر / نەوع / عەدەد</span><span>تۆن</span></div>${rows||`<div class="dn">${flt?'هیچ داتایەک نییە لەم ماوەیەدا':'هیچ داتایەک نییە'}</div>`}</div>`}
 // لیست تا ١٠ ڕۆژ دیار دەبێت، دوای ئەوە سکرۆڵ دەکرێت
 function homeFit(){const dl=$('dl');if(!dl)return;const r=dl.querySelectorAll('.dr');
  if(r.length>10){const x=r[9];dl.style.maxHeight=(x.offsetTop+x.offsetHeight+1)+'px'}}
 $('view').addEventListener('click',e=>{if(repOn)return;const t=e.target.closest('button');if(!t)return;
+ if(t.dataset.ed)return openEdit(t.dataset.em,t.dataset.ed);
  if(homeOn&&t.dataset.ht){hTab=t.dataset.ht;return draw(true)}
  if(t.dataset.mn&&!t.disabled){const m=new Date(hY,hM+(+t.dataset.mn),1);hY=m.getFullYear();hM=m.getMonth();return draw(true)}});
+
+// ---- دەستکاریکردنی تۆمارەکانی ڕۆژێک (✏️) ----
+let edM='',edD='';
+const edEntries=()=>D.manual.filter(e=>e.dir===edM&&String(e.date).slice(0,10)===edD);
+const subOpts=(k,cur)=>{const o=k==='bags'?SB:SBR,ks=Object.keys(o);if(k!=='bags')ks.unshift('');if(cur&&!ks.includes(cur))ks.push(cur);
+ return ks.map(x=>`<option value="${esc(x)}"${x===cur?' selected':''}>${x?(o[x]||esc(x)):'—'}</option>`).join('')};
+function edCard(e){const k=e.kind==='bags'?'bags':'barrels';
+ return `<div class="ee" data-id="${esc(e.id)}"><div class="et"><span>${ICO[k]} ${NAME[k]}</span><button class="x" data-edel="${esc(e.id)}" aria-label="سڕینەوە">${TRASH}</button></div>
+ <div class="row2"><div><label>جۆر</label><select data-f="kind"><option value="barrels"${k==='barrels'?' selected':''}>بەرمیل</option><option value="bags"${k==='bags'?' selected':''}>کیسە</option></select></div>
+ <div><label>نەوع</label><select data-f="sub">${subOpts(k,e.sub||'')}</select></div></div>
+ <label>مواسەفات</label><input data-f="spec" list="edsp" value="${esc(e.spec||'')}" autocomplete="off">
+ <div class="row2"><div><label>عەدەد</label><input data-f="qty" type="number" inputmode="numeric" min="0" value="${+e.qty||''}"></div>
+ <div><label>تێکڕا · کێشی یەک</label><input data-f="avg" type="number" inputmode="decimal" step="any" min="0" value="${+e.avg||''}"></div></div>
+ <label>بەروار</label><input data-f="date" type="date" value="${esc(String(e.date).slice(0,10))}"></div>`}
+function edRender(){const es=edEntries();
+ $('edtT').innerHTML=HT[edM].lbl+' · <bdi dir="ltr">'+edD+'</bdi>';
+ $('edtB').innerHTML=es.length?es.map(edCard).join('')+'<datalist id="edsp">'+[...new Set([...(D.specs.barrels||[]),...(D.specs.bags||[])])].map(x=>`<option value="${esc(x)}">`).join('')+'</datalist>':'<div class="dn">هیچ تۆمارێک نەماوە</div>';
+ $('edSave').hidden=!es.length}
+function openEdit(mode,ds){edM=mode;edD=ds;edRender();$('edt').classList.add('show');document.body.style.overflow='hidden'}
+function closeEdit(){$('edt').classList.remove('show');document.body.style.overflow=''}
+function edSave(){const up=[];
+ for(const c of document.querySelectorAll('#edtB .ee')){
+  const g=f=>c.querySelector('[data-f="'+f+'"]').value,e=D.manual.find(m=>String(m.id)===c.dataset.id);if(!e)continue;
+  const kind=g('kind'),spec=nz(g('spec')),sub=g('sub'),q=+g('qty'),av=+g('avg')||0,date=g('date');
+  if(!spec){toast('مواسەفات بنووسە');return}
+  if(kind==='bags'&&!sub){toast('جۆری جامبۆ دیاری بکە');return}
+  if(!(q>0)){toast('عەدەد بنووسە');return}
+  if(!date){toast('بەروار دیاری بکە');return}
+  up.push({e,kind,spec,sub,q,av,date})}
+ up.forEach(u=>{const L=D.specs[u.kind]=D.specs[u.kind]||[],name=L.find(x=>x.toLowerCase()===u.spec.toLowerCase())||(L.push(u.spec),u.spec);
+  Object.assign(u.e,{kind:u.kind,spec:name,sub:u.sub,qty:u.q,avg:u.av,tons:u.q*u.av,date:u.date,upd:Date.now()})});
+ save();closeEdit();draw();toast('گۆڕانکاری پاشەکەوت کرا ✓')}
+$('edt').addEventListener('click',e=>{if(e.target.id==='edt')return closeEdit();const t=e.target.closest('button');if(!t)return;
+ if(t.id==='edtX')return closeEdit();if(t.id==='edSave')return edSave();
+ const id=t.dataset.edel;if(id)ask('دەتەوێت ئەم داتایە بسڕیتەوە؟',()=>{D.manual=D.manual.filter(m=>String(m.id)!==id);save();draw();if(edEntries().length)edRender();else closeEdit()})});
+$('edt').addEventListener('change',e=>{if(e.target.dataset.f!=='kind')return;e.target.closest('.ee').querySelector('[data-f="sub"]').innerHTML=subOpts(e.target.value,'')});
+addEventListener('keydown',e=>{if(e.key==='Escape')closeEdit()});
 
 function draw(keep){
  const pg=homeOn?'home':repOn?'rep':lossOn?'loss':tab===1?'out':'yard';
@@ -636,7 +687,7 @@ function onErr(e){const c=(e&&e.code)||String(e);
 // ---- pure logic ----
 function mergeRemote(D,R,prev){
  const out={manual:[],specs:Object.assign({},D.specs||{}),avg:{}},seen=new Set();
- (D.manual||[]).forEach(e=>{const r=R.manual.get(e.id);if(r){out.manual.push(r);seen.add(e.id)}else if(!prev.manual.has(e.id)){out.manual.push(e);seen.add(e.id)}});
+ (D.manual||[]).forEach(e=>{const r=R.manual.get(e.id);if(r){out.manual.push((e.upd||0)>(r.upd||0)?e:r);seen.add(e.id)}else if(!prev.manual.has(e.id)){out.manual.push(e);seen.add(e.id)}});
  R.manual.forEach((r,id)=>{if(!seen.has(id))out.manual.push(r)});
  KS.forEach(k=>{const loc=(D.specs&&D.specs[k])||[],a=[],s=new Set();
   loc.forEach(x=>{if(R.specs[k].has(x)||!prev.specs[k].has(x)){a.push(x);s.add(x)}});
@@ -743,7 +794,7 @@ if('serviceWorker' in navigator){
  const hash=t=>{let h=5381;for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))|0;return h};
  const grab=()=>fetch('index.html',{cache:'no-store'}).then(r=>r.ok?r.text():null).then(t=>t?hash(t):null).catch(()=>null);
  const reload=()=>{if(reloading)return;reloading=true;location.reload()};
- const busy=()=>{try{return !!addOpen}catch(e){return false}};
+ const busy=()=>{try{return !!addOpen||$('edt').classList.contains('show')}catch(e){return false}};
  const check=async(reg)=>{
   try{reg&&reg.update()}catch(e){}
   const h=await grab();
