@@ -42,11 +42,11 @@ body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 "Segoe UI",Taho
 .pg button{width:36px;height:36px;border-radius:50%;border:1px solid var(--bd);background:var(--card);color:var(--tx);display:grid;place-items:center;padding:0}
 .pg button:disabled{opacity:.35}.pg svg{width:18px;height:18px}
 .dl{position:relative;background:var(--card);border:1px solid var(--bd);border-radius:24px;overflow-y:auto;overflow-x:hidden}
+.dl{scrollbar-width:thin;scrollbar-color:var(--bd) transparent}.card b{direction:ltr;unicode-bidi:isolate}.dn{padding:22px 12px;text-align:center;color:var(--mu)}.mc{justify-content:center}
 .dh,.dr{display:grid;grid-template-columns:56px 1fr 56px;gap:6px;align-items:center;padding:0 12px}
 .dh{position:sticky;top:0;z-index:2;background:var(--hv);font-size:12px;color:var(--mu);min-height:34px;border-bottom:1px solid var(--bd)}
 .dh span:first-child,.dh span:last-child{text-align:center}
 .dr{padding-top:9px;padding-bottom:9px;min-height:58px;border-bottom:1px solid var(--bd)}.dr:last-child{border-bottom:0}
-.dr.em{min-height:44px;padding-top:6px;padding-bottom:6px}.dr.em .di{color:var(--mu);opacity:.6}.dr.em .dd{opacity:.6}
 .dr.td{box-shadow:inset -4px 0 0 var(--at);background:var(--hv)}
 .dd{text-align:center;line-height:1.2}.dd b{display:block;font-size:20px}.dd span{font-size:11px;color:var(--mu)}
 .di{display:flex;flex-wrap:wrap;gap:6px}
@@ -390,7 +390,7 @@ const HT={out:{lbl:'ڕۆشتوو',g:'g-out',hero:'کۆی ڕۆشتووی مانگ
  yard:{lbl:'ناوساحە',g:'g-yard',hero:'ئێستا لە ساحە ماوە',list:'داخڵبووی ڕۆژانە'},
  loss:{lbl:'خەساربوو',g:'g-loss',hero:'کۆی خەسارچووی مانگ',list:'خەساربووی ڕۆژانە'}};
 const _n=new Date();let hTab='out',hY=_n.getFullYear(),hM=_n.getMonth();
-const tonF=kg=>((+kg||0)/1000).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const tonF=kg=>{const t=Math.round(((+kg||0)/1000)*100)/100,[i,f]=Math.abs(t).toFixed(2).split('.');return (t<0?'-':'')+i.replace(/\B(?=(\d{3})+(?!\d))/g,',')+','+f};
 const isBagC=c=>String(c.ItemType||'').trim()==='کیسە',isTkC=c=>String(c.ItemType||'').trim()==='تەنکەر';
 const ICO={barrels:'🛢',bags:BAGI};
 function homeItems(mode,ym){
@@ -401,32 +401,38 @@ function homeItems(mode,ym){
  D.manual.forEach(e=>{if(e.dir===dir)push(e.date,e.kind,e.sub,e.spec,e.qty,e.tons)});
  return it}
 const KIND_OK={barrels:1,bags:1};
+function pager(){const atNow=hY===_n.getFullYear()&&hM===_n.getMonth();
+ return `<div class="pg"><button data-mn="-1" aria-label="مانگی پێشوو">${IC.prev}</button><span>${MON[hM]} ${hY}</span><button data-mn="1" aria-label="مانگی دواتر" ${atNow?'disabled':''}>${IC.next}</button></div>`}
+function monthTotals(mode){const t={barrels:0,bags:0,kg:0};
+ if(mode==='yard'){const T=yardTotals();t.barrels=T.barrels[1];t.bags=T.bags[1];t.kg=T.barrels[0]+T.bags[0]}
+ else homeItems(mode,hY+'-'+String(hM+1).padStart(2,'0')).forEach(x=>{t[x.k]+=x.q;t.kg+=x.kg});
+ return t}
 function homeView(){
- const H=HT[hTab],ym=hY+'-'+String(hM+1).padStart(2,'0'),items=homeItems(hTab,ym),n=new Date(hY,hM+1,0).getDate();
- const tot={barrels:0,bags:0,kg:0};
- if(hTab==='yard'){const T=yardTotals();tot.barrels=T.barrels[1];tot.bags=T.bags[1];tot.kg=T.barrels[0]+T.bags[0]}
- else items.forEach(x=>{tot[x.k]+=x.q;tot.kg+=x.kg});
+ const H=HT[hTab],tot=monthTotals(hTab);
  const seg='<div class="seg">'+Object.keys(HT).map(k=>`<button data-ht="${k}" class="${HT[k].g}${k===hTab?' on':''}">${IC[k]}<span>${HT[k].lbl}</span></button>`).join('')+'</div>';
  const hero=`<div class="hero ${H.g}"><div class="ht">${H.hero}</div><div class="hs">${hTab==='yard'?'هەموو کات':MON[hM]+' '+hY}</div>
   <div class="hb"><div class="hx"><span>🛢 بەرمیل</span><b dir="ltr">${fmt(tot.barrels)}</b></div><div class="hx"><span>${BAGI} کیسە</span><b dir="ltr">${fmt(tot.bags)}</b></div></div>
   <div class="hf"><span>کۆی کێش</span><i></i><b><bdi dir="ltr">${tonF(tot.kg)}</bdi> تۆن</b></div></div>`;
- const atNow=hY===_n.getFullYear()&&hM===_n.getMonth();
- const pager=`<div class="pg"><button data-mn="-1" aria-label="مانگی پێشوو">${IC.prev}</button><span>${MON[hM]} ${hY}</span><button data-mn="1" aria-label="مانگی دواتر" ${atNow?'disabled':''}>${IC.next}</button></div>`;
+ return seg+hero+(hTab==='yard'?'':`<div class="mn mc">${pager()}</div>`)}
+// لیستی ڕۆژانە بۆ ناو تابی ڕۆشتوو / ناوساحە / خەساربوو — تەنها ئەو ڕۆژانەی داتایان هەیە
+function dayList(mode){
+ const H=HT[mode],ym=hY+'-'+String(hM+1).padStart(2,'0'),items=homeItems(mode,ym),n=new Date(hY,hM+1,0).getDate();
  const by=Array.from({length:n+1},()=>({}));
  items.forEach(x=>{if(x.d<1||x.d>n)return;const key=x.k+'|'+x.sub+'|'+x.spec,g=by[x.d][key]??={k:x.k,sub:x.sub,spec:x.spec,q:0,kg:0};g.q+=x.q;g.kg+=x.kg});
- const ord=k=>k==='barrels'?0:1;let rows='';
+ const ord=k=>k==='barrels'?0:1,atNow=hY===_n.getFullYear()&&hM===_n.getMonth();let rows='';
  for(let d=1;d<=n;d++){
-  const gs=Object.values(by[d]).sort((a,b)=>ord(a.k)-ord(b.k)||String(a.spec).localeCompare(String(b.spec),undefined,{numeric:true})||String(a.sub).localeCompare(String(b.sub))),
-   kg=gs.reduce((s,g)=>s+g.kg,0),wd=WD[new Date(hY,hM,d).getDay()],td=atNow&&d===_n.getDate();
+  const gs=Object.values(by[d]);if(!gs.length)continue;
+  gs.sort((a,b)=>ord(a.k)-ord(b.k)||String(a.spec).localeCompare(String(b.spec),undefined,{numeric:true})||String(a.sub).localeCompare(String(b.sub)));
+  const kg=gs.reduce((s,g)=>s+g.kg,0),wd=WD[new Date(hY,hM,d).getDay()],td=atNow&&d===_n.getDate();
   const chips=gs.map(g=>{const nm=[g.spec?esc(g.spec):'نەدیاریکراو',subLbl(g.k,g.sub)].filter(Boolean).join(' · ');
    return `<span class="it">${ICO[g.k]}<em>${nm}</em><b>${fmt(g.q)}</b><small>${NAME[g.k]}</small></span>`}).join('');
-  rows+=`<div class="dr${gs.length?'':' em'}${td?' td':''}"><div class="dd"><b>${d}</b><span>${wd}</span></div><div class="di">${chips||'—'}</div><div class="dt">${gs.length?`<b dir="ltr">${tonF(kg)}</b><span>تۆن</span>`:''}</div></div>`}
- return seg+hero+`<div class="mn"><h2>${H.list}</h2>${pager}</div><div class="dl" id="dl"><div class="dh"><span>ڕۆژ</span><span>جۆر / نەوع / عەدەد</span><span>کێش</span></div>${rows}</div>`}
+  rows+=`<div class="dr${td?' td':''}"><div class="dd"><b>${d}</b><span>${wd}</span></div><div class="di">${chips}</div><div class="dt"><b dir="ltr">${tonF(kg)}</b><span>تۆن</span></div></div>`}
+ return `<div class="mn"><h2>${H.list}</h2>${pager()}</div><div class="dl" id="dl"><div class="dh"><span>ڕۆژ</span><span>جۆر / نەوع / عەدەد</span><span>کێش</span></div>${rows||'<div class="dn">هیچ داتایەک نییە</div>'}</div>`}
 // لیست تا ١٠ ڕۆژ دیار دەبێت، دوای ئەوە سکرۆڵ دەکرێت
 function homeFit(){const dl=$('dl');if(!dl)return;const r=dl.querySelectorAll('.dr');
  if(r.length>10){const x=r[9];dl.style.maxHeight=(x.offsetTop+x.offsetHeight+1)+'px'}}
-$('view').addEventListener('click',e=>{if(!homeOn)return;const t=e.target.closest('button');if(!t)return;
- if(t.dataset.ht){hTab=t.dataset.ht;return draw(true)}
+$('view').addEventListener('click',e=>{if(repOn)return;const t=e.target.closest('button');if(!t)return;
+ if(homeOn&&t.dataset.ht){hTab=t.dataset.ht;return draw(true)}
  if(t.dataset.mn&&!t.disabled){const m=new Date(hY,hM+(+t.dataset.mn),1);hY=m.getFullYear();hM=m.getMonth();return draw(true)}});
 
 function draw(keep){
@@ -435,9 +441,9 @@ function draw(keep){
  document.body.classList.toggle('repon',repOn);document.body.classList.toggle('loson',lossOn);document.body.classList.toggle('homeon',homeOn);
  $('perW').style.display=tab===1?'':'none';
  $('chips').innerHTML=['بەرمیل','کیسە'].map(o=>`<button class="chip${picks.has(o)?' on':''}" data-o="${o}">${o}</button>`).join('');
- $('view').innerHTML=homeOn?homeView():lossOn?lossView():repOn?report():tab===1?outgoing():yard();
+ $('view').innerHTML=homeOn?homeView():(lossOn?lossView():repOn?report():tab===1?outgoing():yard())+(repOn?'':dayList(lossOn?'loss':tab===1?'out':'yard'));
  const T=PT[pg];$('ttl').textContent=T[0];$('sub').textContent=T[1];
- if(homeOn)homeFit();
+ homeFit();
  if(repOn&&!lossOn&&!homeOn)setTimeout(()=>{if(repOn)getPdf().catch(()=>{})},300);
  if(!keep)panel()}
 function save(){try{localStorage.setItem('sw_stats',JSON.stringify(D))}catch(e){}try{window.SYNC&&window.SYNC.push()}catch(e){}}
